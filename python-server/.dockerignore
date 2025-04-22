@@ -1,0 +1,13 @@
+# Exclude Python cache files and directories
+__pycache__/
+*.pyc
+*.pyo
+
+# Exclude virtual environment directory
+.venv/
+
+# Exclude lock files
+uv.lock
+# Exclude pyproject files (use pip in Dockerfile)
+pyproject.toml
+# add what you need

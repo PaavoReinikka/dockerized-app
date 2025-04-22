@@ -1,0 +1,65 @@
+services:
+  database:
+    container_name: postgresql_database
+    image: postgres:17.0
+    restart: unless-stopped
+    env_file:
+      - project.env
+  
+  database-migrations:
+    image: flyway/flyway:10
+    env_file:
+      - project.env
+    depends_on:
+      - database
+    volumes:
+      - ./database-migrations:/flyway/sql
+    command: -connectRetries=60 -baselineOnMigrate=true migrate
+
+  client:
+    build: client
+    restart: unless-stopped
+    volumes:
+      - ./client:/app
+    ports:
+      - 5173:5173
+    depends_on:
+      - server
+
+  e2e-tests:
+    entrypoint: "/bin/true"
+    build: e2e-tests
+    network_mode: host
+    depends_on:
+      - client
+    volumes:
+      - ./e2e-tests/tests:/app.tests
+
+  server:
+    build:
+      context: ./python-server  # Updated to point to the python-server directory
+    restart: unless-stopped
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ./python-server:/app
+    ports:
+      - 8000:8000
+    env_file:
+      - project.env
+    depends_on:
+      - database
+
+  chat-engine:
+    container_name: chat-engine
+    build:
+      context: .
+      dockerfile: chat-engine/Dockerfile
+    volumes:
+      - type: bind
+        source: ./chat-engine/.ollama
+        target: /root/.ollama
+    ports:
+      - 7860:7860
+    restart: always
+    profiles:
+      - chat-engine

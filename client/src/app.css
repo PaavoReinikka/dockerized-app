@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body {
+  @apply h-full;
+}
+
+#mainheading {
+  @apply mt-8 mb-4 text-3xl font-extrabold text-gray-900 dark:text-white md:text-4xl lg:text-6xl
+}
+
+#minorheading {
+  @apply mt-8 mb-4 font-extrabold text-gray-900 dark:text-white md:text-3xl lg:text-4xl
+}
+
+/* ChatBot styles */
+.chat-toggle {
+  position: fixed;
+  display: flex;
+  z-index: 10000; /* Ensure it appears above the chat window */
+  right: 0;
+  bottom: 750px; /* Default position when the chat is visible */
+  padding: 3.5rem 2rem; /* Increase padding for a larger button */
+  font-size: 1.25rem; /* Increase font size */
+}
+
+.chat-toggle.hidden {
+  right: fixed; /* Reset right alignment */
+  right: 0; /* Move to the left lower corner */
+  bottom: 0; /* Position at the bottom of the screen */
+}
