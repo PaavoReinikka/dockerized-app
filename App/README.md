@@ -175,7 +175,9 @@ This project us under MIT license: https://mit-license.org/
 
 ## Acknowledgments
 
-Electricity price data is sourced from Pörssisähkö API.
+Electricity price data is sourced from Pörssisähkö API, consumption and production data from Fingrid. 
+
+Juho Ahopelto has implemented all data endpoints on the server side, and most of the backend tests.
 
 ## Additional notes
 
