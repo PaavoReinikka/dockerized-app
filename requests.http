@@ -1,3 +1,0 @@
-# for development, REST client extension or similar tool can be used
-# to test the API endpoints (sometimes it's just easier to skip the frontend)
-curl -X GET http://localhost:8000/api/data
