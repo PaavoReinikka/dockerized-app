@@ -1,0 +1,63 @@
+@startuml
+title FastAPI Server-side Authentication (Updated)
+
+package "Models" {
+    class User {
+        + email: EmailStr
+        + password: str
+        + validate_password(password: str): str
+    }
+    class UserCode {
+        + email: EmailStr
+        + code: str
+        + validate_code(code: str): str
+    }
+    class EmailRequest {
+        + email: EmailStr
+    }
+}
+
+package "Repositories" {
+    class UserRepository {
+        - database_url: str
+        + get_user_by_email(email: str): dict | None
+        + create_user(email: str, password_hash: str, verification_code: str): None
+        + verify_code(email: str, verification_code: str): Any
+        + update_code(email: str, new_code: str): None
+    }
+}
+
+package "Services" {
+    class AuthService {
+        - user_repository: UserRepository
+        - pwd_context: CryptContext
+        + get_password_hash(password: str): str
+        + generate_verification_code(): str
+        + verify_password(plain_password: str, hashed_password: str): bool
+        + create_access_token(data: dict, expires_delta: timedelta = None): str
+        + authenticate_user(email: str, password: str): dict | None
+        + register_user(email: str, password: str): None
+        + verify_user(email: str, code: str): None
+        + update_verification_code(email: str): None
+    }
+}
+
+package "Controllers" {
+    class AuthController {
+        + register(user: User, response: Response): dict
+        + login(user: User, response: Response): dict
+        + logout(response: Response): dict
+        + verify(user_code: UserCode, response: Response): dict
+        + resend_verification_code(request: EmailRequest, response: Response): dict
+        + create_jwt_middleware(public_routes: list): Callable
+    }
+}
+
+' Relationships
+AuthService --> UserRepository
+AuthController --> AuthService
+AuthController --> User
+AuthController --> UserCode
+AuthController --> EmailRequest
+
+@enduml

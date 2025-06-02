@@ -1,0 +1,13 @@
+@startuml
+title LLM engine with retrieval (pre-processed data)
+User -> LLM_Client: User initiates a query
+note over LLM_Client: Client embeds the query
+note over Database: DB has text chunks\nand embeddings
+LLM_Client -> Database: Send embedded query
+note over Database: similarity search\nfor relevant texts
+Database -> LLM_Client: Return relevant text chunks
+note over LLM_Client: Combine query with\nretrieved text chunks
+LLM_Client -> LLM_Model: formatted prompt with query and context
+LLM_Model -> LLM_Client: Return generated response
+LLM_Client -> User: return generated response
+@enduml

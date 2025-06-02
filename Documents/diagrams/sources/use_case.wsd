@@ -1,0 +1,55 @@
+@startuml
+title Use Case Diagram for Electricity Market App
+
+actor "Signed-in User" as User
+actor "Visitor" as Visitor
+
+package "Frontend (Svelte)" {
+    usecase "View Current Electricity Prices" as ViewPrices
+    usecase "Request Historical/predicted Data" as RequestHistorical
+    usecase "Chat with LLM" as ChatWithLLM
+}
+
+package "Database" {
+    usecase "Store and Retrieve Cached Data" as CacheDB
+    usecase "Store and Retrieve User Data\n(Auth service only)" as UserDB
+    usecase "Text chunks and\nvector embeddings" as VectorDB
+}
+
+package "LLM" {
+    usecase "Embed Query and Search Vector DB" as EmbedSearch
+    usecase "Format prompt with query\nand context" as PromptLLM
+    usecase "LLM engine" as LLMengine
+}
+
+package "Backend (FastAPI)" {
+    usecase "Fetch Current Prices" as FetchPrices
+    usecase "Fetch Data" as FetchData
+    usecase "Check Cache" as CheckCache
+    usecase "Retrieve Data from External APIs\nand chache" as RetrieveExternal
+}
+
+package "External APIs" {
+    usecase "Fetch Data from External APIs" as ExternalAPIs
+}
+
+Visitor --> ViewPrices
+User --> ViewPrices
+User --> RequestHistorical
+User --> ChatWithLLM
+
+ViewPrices --> FetchPrices
+RequestHistorical --> FetchData
+FetchPrices --> CheckCache
+FetchData --> CheckCache
+CheckCache --> CacheDB
+CheckCache --> RetrieveExternal
+RetrieveExternal --> CacheDB
+RetrieveExternal --> ExternalAPIs
+
+ChatWithLLM --> EmbedSearch
+EmbedSearch --> VectorDB
+EmbedSearch --> PromptLLM
+PromptLLM --> LLMengine
+
+@enduml

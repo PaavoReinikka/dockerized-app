@@ -1,0 +1,142 @@
+services:
+  database:
+    container_name: postgresql_database
+    image: reinikp2/pgvector-database:v1 #postgres:17.0
+    restart: unless-stopped
+    env_file:
+      - project.env
+    ports: # TODO: comment out later
+      - 5432:5432 # Only for development/debugging
+    environment:
+      - TZ=Europe/Helsinki  # Set the timezone
+    volumes:
+      - ./data-preparation/data:/data
+      - ./pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  database-migrations:
+    image: flyway/flyway:10
+    env_file:
+      - project.env
+    depends_on:
+      database:
+        condition: service_started
+    volumes:
+      - ./data-preparation/data:/data
+      - ./database-migrations:/flyway/sql
+    command: -connectRetries=60 -baselineOnMigrate=true migrate
+      
+  client:
+    build: client
+    restart: unless-stopped
+    volumes:
+      - ./client:/app
+    ports:
+      - 5173:5173
+    depends_on:
+      - server
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+
+  e2e-tests:
+    entrypoint: "/bin/true"
+    build: e2e-tests
+    network_mode: host
+    depends_on:
+      - client
+    volumes:
+      - ./e2e-tests/tests:/app.tests
+
+  server:
+    build:
+      context: ./python-server  # Updated to point to the python-server directory
+    restart: unless-stopped
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ./python-server:/app
+    ports:
+      - 8000:8000
+    env_file:
+      - project.env
+    depends_on:
+      database:
+        condition: service_healthy
+      #- database
+    environment:
+      - TZ=Europe/Helsinki  # Set the timezone
+
+  # This service is for updating the database with data from external sources
+  # It will be run manually when needed. Any known and constant data should be
+  # added to the database using migrations. Only fresh data that is not
+  # available in the database should be added using this service.
+  data-preparation:
+    build:
+      context: ./data-preparation/scripts  # Here be Dockerfile
+    volumes:
+      - ./data-preparation/data:/data
+      - ./data-preparation/scripts:/scripts
+    working_dir: /scripts # this is already done in the Dockerfile (remove for production)
+    env_file:
+      - ./project.env
+    entrypoint: >
+      bash -c "
+      ./retrieve_porssisahko_update.sh
+      #tail -f /dev/null # for debugging -- keeps the container running after the script finishes
+      "
+    profiles:
+      - data-preparation
+
+  backend-tests:
+    build:
+      context: ./backend-tests
+    network_mode: host
+    depends_on:
+      - server
+      - database
+    env_file:
+      - ./project.env
+    volumes:
+      - ./backend-tests/tests:/app/tests
+      - ./python-server:/app/python-server
+    environment:
+      - PYTHONPATH=/app/python-server
+    profiles:
+      - backend-tests
+
+  user-chat:
+    container_name: user-chat
+    build:
+      context: .
+      dockerfile: user-chat/Dockerfile
+    volumes:
+      - type: bind
+        source: ./user-chat/.ollama
+        target: /root/.ollama
+    ports:
+      - 7863:7860
+    restart: always
+    # profiles:
+    #   - user-chat
+  
+  # chat-engine:
+  #   container_name: chat-engine
+  #   build:
+  #     context: .
+  #     dockerfile: chat-engine/Dockerfile
+  #   env_file:
+  #     - project.env
+  #   ports:
+  #     - 7860:7860
+  #     - 7861:7861
+  #     - 7862:7862
+  #   restart: always
+  #   # profiles:
+  #   #   - chat-engine
+  #   volumes:
+  #     - ./chat-engine:/app

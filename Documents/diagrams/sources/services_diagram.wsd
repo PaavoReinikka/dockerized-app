@@ -1,0 +1,42 @@
+@startuml
+title Main services and their interactions
+skinparam rectangle {
+    BackgroundColor #FDF6E3
+    BorderColor #586e75
+}
+skinparam cloud {
+    BackgroundColor #FDF6E3
+    BorderColor #586e75
+}
+
+cloud "Docker Network\nmanages networking" as DockerNetwork
+
+package "Database Layer" {
+    [Database] <<container>> 
+    [Database Migrations] <<container>> 
+}
+
+package "Backend Layer" {
+    [Server] <<container>> 
+    [User Chat] <<container>> 
+}
+
+package "Frontend Layer" {
+    [Client] <<container>> 
+    [E2E Tests] <<container>> 
+}
+
+cloud "External APIs" as ExternalAPIs
+
+[Database Migrations] --> [Database] : Applies migrations
+[Server] --> [Database] : Reads/Writes data
+[Client] --> [Server] : API calls (port 8000)
+[Client] --> [User Chat] : LLM service (port 7862)
+[E2E Tests] --> [Client] : Tests frontend
+[Server] --> ExternalAPIs : Makes external API calls
+
+note right of Client
+Runs on port 5173
+end note
+
+@enduml

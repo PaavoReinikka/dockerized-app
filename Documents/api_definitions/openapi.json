@@ -1,0 +1,728 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "FastAPI",
+        "version": "0.1.0"
+    },
+    "paths": {
+        "/api/windpower": {
+            "get": {
+                "summary": "Get Windpower",
+                "description": "Get wind power production forecast.\nFetches forecast data from Fingrid dataset ID 245.\n\nReturns:\n    dict: A data point or an error message.",
+                "operationId": "get_windpower_api_windpower_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FingridDataPoint"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/windpower/range": {
+            "post": {
+                "summary": "Post Windpower Range",
+                "description": "Get wind power production data for a given time range.\nFetches data from Fingrid dataset ID 245.\n\nArgs:\n    time_range (TimeRangeRequest): Start and end time in RFC 3339 format.\n\nReturns:\n    list[dict]: A list of data points or an error message.",
+                "operationId": "post_windpower_range_api_windpower_range_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TimeRangeRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/FingridDataPoint"
+                                    },
+                                    "type": "array",
+                                    "title": "Response Post Windpower Range Api Windpower Range Post"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/consumption": {
+            "get": {
+                "summary": "Get Consumption",
+                "description": "Get electricity consumption forecast.\nFetches consumption data from Fingrid dataset ID 165.\n\nReturns:\n    dict: A data point or an error message.",
+                "operationId": "get_consumption_api_consumption_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FingridDataPoint"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/consumption/range": {
+            "post": {
+                "summary": "Post Consumption Range",
+                "description": "Get electricity consumption data for a given time range.\nFetches consumption data from Fingrid dataset ID 165.\n\nArgs:\n    time_range (TimeRangeRequest): Start and end time in RFC 3339 format.\n\nReturns:\n    list[dict]: A list of data points or an error message.",
+                "operationId": "post_consumption_range_api_consumption_range_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TimeRangeRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/FingridDataPoint"
+                                    },
+                                    "type": "array",
+                                    "title": "Response Post Consumption Range Api Consumption Range Post"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/production": {
+            "get": {
+                "summary": "Get Production",
+                "description": "Get electricity production forecast.\nFetches production data from Fingrid dataset ID 241.\n\nReturns:\n    dict: A data point or an error message.",
+                "operationId": "get_production_api_production_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FingridDataPoint"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/production/range": {
+            "post": {
+                "summary": "Post Production Range",
+                "description": "Get electricity production data for a given time range.\nFetches production data from Fingrid dataset ID 241.\n\nArgs:\n    time_range (TimeRangeRequest): Start and end time in RFC 3339 format.\n\nReturns:\n    list[dict]: A list of data points or an error message.",
+                "operationId": "post_production_range_api_production_range_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TimeRangeRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/FingridDataPoint"
+                                    },
+                                    "type": "array",
+                                    "title": "Response Post Production Range Api Production Range Post"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/price/range": {
+            "post": {
+                "summary": "Post Price Range",
+                "description": "Get price data for specific time range from Porssisahko API",
+                "operationId": "post_price_range_api_price_range_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TimeRangeRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/public/data": {
+            "get": {
+                "summary": "Get Prices",
+                "operationId": "get_prices_api_public_data_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/PriceDataPoint"
+                                    },
+                                    "type": "array",
+                                    "title": "Response Get Prices Api Public Data Get"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/data/today": {
+            "get": {
+                "summary": "Get Prices Today",
+                "operationId": "get_prices_today_api_data_today_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/PriceDataPoint"
+                                    },
+                                    "type": "array",
+                                    "title": "Response Get Prices Today Api Data Today Get"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/auth/register": {
+            "post": {
+                "summary": "Register",
+                "operationId": "register_api_auth_register_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/User"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/auth/login": {
+            "post": {
+                "summary": "Login",
+                "operationId": "login_api_auth_login_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/User"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/auth/logout": {
+            "get": {
+                "summary": "Logout",
+                "operationId": "logout_api_auth_logout_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/auth/verify": {
+            "post": {
+                "summary": "Verify",
+                "description": "Verify the user by checking the verification code.",
+                "operationId": "verify_api_auth_verify_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UserCode"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/auth/resend": {
+            "post": {
+                "summary": "Resend Verification Code",
+                "operationId": "resend_verification_code_api_auth_resend_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/EmailRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "EmailRequest": {
+                "properties": {
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "title": "Email"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "email"
+                ],
+                "title": "EmailRequest"
+            },
+            "ErrorResponse": {
+                "properties": {
+                    "error": {
+                        "type": "string",
+                        "title": "Error",
+                        "description": "Error message describing the issue.",
+                        "examples": [
+                            "An error occurred"
+                        ]
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "error"
+                ],
+                "title": "ErrorResponse"
+            },
+            "FingridDataPoint": {
+                "properties": {
+                    "startTime": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Starttime",
+                        "description": "Start time in RFC 3339 format (e.g., 2024-05-01T00:00:00Z)",
+                        "examples": [
+                            "2024-05-01T00:00:00Z"
+                        ]
+                    },
+                    "endTime": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Endtime",
+                        "description": "End time in RFC 3339 format (e.g., 2024-05-02T00:00:00Z)",
+                        "examples": [
+                            "2024-05-02T00:00:00Z"
+                        ]
+                    },
+                    "value": {
+                        "type": "number",
+                        "title": "Value",
+                        "description": "Value of the data point",
+                        "examples": [
+                            7883.61
+                        ]
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "startTime",
+                    "endTime",
+                    "value"
+                ],
+                "title": "FingridDataPoint"
+            },
+            "HTTPValidationError": {
+                "properties": {
+                    "detail": {
+                        "items": {
+                            "$ref": "#/components/schemas/ValidationError"
+                        },
+                        "type": "array",
+                        "title": "Detail"
+                    }
+                },
+                "type": "object",
+                "title": "HTTPValidationError"
+            },
+            "PriceDataPoint": {
+                "properties": {
+                    "startDate": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Startdate",
+                        "description": "UTC str in RFC 3339 format",
+                        "examples": [
+                            "2025-05-08T04:00:00.000Z"
+                        ]
+                    },
+                    "price": {
+                        "type": "number",
+                        "title": "Price",
+                        "description": "Floating-point number representing the price in euro cents",
+                        "examples": [
+                            0.61
+                        ]
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "startDate",
+                    "price"
+                ],
+                "title": "PriceDataPoint"
+            },
+            "TimeRangeRequest": {
+                "properties": {
+                    "startTime": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Starttime",
+                        "description": "Start time in RFC 3339 format (e.g., 2024-05-01T00:00:00Z)",
+                        "examples": [
+                            "2024-05-01T00:00:00Z"
+                        ]
+                    },
+                    "endTime": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Endtime",
+                        "description": "End time in RFC 3339 format (e.g., 2024-05-02T00:00:00Z)",
+                        "examples": [
+                            "2024-05-02T00:00:00Z"
+                        ]
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "startTime",
+                    "endTime"
+                ],
+                "title": "TimeRangeRequest"
+            },
+            "User": {
+                "properties": {
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "title": "Email"
+                    },
+                    "password": {
+                        "type": "string",
+                        "title": "Password"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "email",
+                    "password"
+                ],
+                "title": "User"
+            },
+            "UserCode": {
+                "properties": {
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "title": "Email"
+                    },
+                    "code": {
+                        "type": "string",
+                        "title": "Code"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "email",
+                    "code"
+                ],
+                "title": "UserCode"
+            },
+            "ValidationError": {
+                "properties": {
+                    "loc": {
+                        "items": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "integer"
+                                }
+                            ]
+                        },
+                        "type": "array",
+                        "title": "Location"
+                    },
+                    "msg": {
+                        "type": "string",
+                        "title": "Message"
+                    },
+                    "type": {
+                        "type": "string",
+                        "title": "Error Type"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "loc",
+                    "msg",
+                    "type"
+                ],
+                "title": "ValidationError"
+            }
+        }
+    }
+}

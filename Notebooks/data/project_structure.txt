@@ -1,0 +1,172 @@
+├── LICENSE
+├── README.md
+├── App
+│   ├── README.md
+│   ├── compose.yaml
+│   ├── project.env
+│   ├── backend-tests
+│   │   ├── Dockerfile
+│   │   ├── README.md
+│   │   └── tests
+│   │       ├── test_auth_controller.py
+│   │       └── test_data_controller.py
+│   ├── chat-engine
+│   │   ├── Dockerfile
+│   │   ├── OLDapp.py
+│   │   ├── README.md
+│   │   ├── _compose.yaml
+│   │   ├── agent_app.py
+│   │   ├── agent_manager.py
+│   │   ├── app.py
+│   │   ├── autoloading_uml.py
+│   │   ├── chat_app.py
+│   │   ├── chat_manager_with_tools.py
+│   │   ├── diagrams
+│   │   └── utils
+│   │       ├── __init__.py
+│   │       ├── db_calls.py
+│   │       ├── helpers.py
+│   │       └── tools.py
+│   ├── client
+│   │   ├── Dockerfile
+│   │   ├── README.md
+│   │   ├── docker
+│   │   ├── src
+│   │   │   ├── app.css
+│   │   │   ├── app.html
+│   │   │   ├── hooks.server.js
+│   │   │   ├── lib
+│   │   │   │   ├── apis
+│   │   │   │   │   └── data-api.js
+│   │   │   │   ├── assets
+│   │   │   │   │   ├── image12.jpg
+│   │   │   │   │   └── image3.png
+│   │   │   │   ├── components
+│   │   │   │   │   ├── ChartTypeMenu.svelte
+│   │   │   │   │   ├── ChatBot.svelte
+│   │   │   │   │   ├── ChatView1.svelte
+│   │   │   │   │   ├── ChatView2.svelte
+│   │   │   │   │   ├── MainChart.svelte
+│   │   │   │   │   ├── PriceCards.svelte
+│   │   │   │   │   ├── RangeChart.svelte
+│   │   │   │   │   ├── Tabs.svelte
+│   │   │   │   │   └── layout
+│   │   │   │   │       ├── Clock.svelte
+│   │   │   │   │       ├── Footer.svelte
+│   │   │   │   │       ├── Header.svelte
+│   │   │   │   │       ├── PriceBall.svelte
+│   │   │   │   │       └── User.svelte
+│   │   │   │   ├── states
+│   │   │   │   │   ├── usePricesState.svelte.js
+│   │   │   │   │   └── userState.svelte.js
+│   │   │   │   └── utils
+│   │   │   │       ├── clock.js
+│   │   │   │       ├── date-helpers.js
+│   │   │   │       └── stats-helpers.js
+│   │   │   └── routes
+│   │   │       ├── +layout.js
+│   │   │       ├── +layout.server.js
+│   │   │       ├── +layout.svelte
+│   │   │       ├── +page.svelte
+│   │   │       ├── api
+│   │   │       │   └── devchat
+│   │   │       │       └── +server.js
+│   │   │       ├── auth
+│   │   │       │   └── [action]
+│   │   │       │       ├── +page.js
+│   │   │       │       ├── +page.server.js
+│   │   │       │       └── +page.svelte
+│   │   │       ├── chat
+│   │   │       │   └── +page.svelte
+│   │   │       ├── epc
+│   │   │       │   ├── +page.server.js
+│   │   │       │   └── +page.svelte
+│   │   │       ├── hintatiedot
+│   │   │       │   ├── +page.server.js
+│   │   │       │   └── +page.svelte
+│   │   │       ├── logout
+│   │   │       │   ├── +page.js
+│   │   │       │   ├── +page.server.js
+│   │   │       │   └── +page.svelte
+│   │   │       ├── price
+│   │   │       │   ├── +page.server.js
+│   │   │       │   └── +page.svelte
+│   │   │       └── send
+│   │   │           ├── +page.server.js
+│   │   │           └── +page.svelte
+│   │   └── static
+│   │       └── favicon.png
+│   ├── data-preparation
+│   │   ├── README.md
+│   │   └── scripts
+│   │       ├── Dockerfile
+│   │       ├── README.md
+│   │       ├── clean_porssisahko.py
+│   │       ├── populate_porssisahko.py
+│   │       └── retrieve_porssisahko_update.sh
+│   ├── database-migrations
+│   │   ├── V10__code_constraint.sql
+│   │   ├── V11__documents.sql
+│   │   ├── V12__files.sql
+│   │   ├── V1__users.sql
+│   │   ├── V2__porssisahko.sql
+│   │   ├── V3__timezone.sql
+│   │   ├── V4__users_add_role.sql
+│   │   ├── V5__porssisahko_load_entries.sql
+│   │   ├── V6__users_add_isverified.sql
+│   │   ├── V8__extension_vector.sql
+│   │   └── V9__code.sql
+│   ├── e2e-tests
+│   │   ├── Dockerfile
+│   │   └── tests
+│   │       └── frontend.spec.js
+│   ├── python-server
+│   │   ├── Dockerfile
+│   │   ├── README.md
+│   │   ├── main.py
+│   │   ├── requirements.txt
+│   │   ├── config
+│   │   │   ├── __init__.py
+│   │   │   └── secrets.py
+│   │   ├── controllers
+│   │   │   ├── auth_controller.py
+│   │   │   └── data_controller.py
+│   │   ├── ext_apis
+│   │   │   └── ext_apis.py
+│   │   ├── models
+│   │   │   ├── custom_exception.py
+│   │   │   ├── data_model.py
+│   │   │   └── user_model.py
+│   │   ├── repositories
+│   │   │   ├── porssisahko_repository.py
+│   │   │   └── user_repository.py
+│   │   ├── scheduled_tasks
+│   │   │   └── porssisahko_scheduler.py
+│   │   ├── services
+│   │   │   ├── auth_service.py
+│   │   │   └── data_service.py
+│   │   └── utils
+│   │       ├── email_tools.py
+│   │       ├── porssisahko_service_tools.py
+│   │       └── porssisahko_tools.py
+│   └── user-chat
+│       ├── Dockerfile
+│       ├── README
+│       ├── gradio_dashboard.py
+│       └── run.sh
+└── Documents
+    ├── README.md
+    ├── backend_design.md
+    ├── openapi_endpoint_descriptions.md
+    ├── project_description.md
+    ├── project_directory_structure.txt
+    └── diagrams
+        └── sources
+            ├── authentication_call_sequence_diagram.wsd
+            ├── authentication_class_diagram.wsd
+            ├── authentication_use_case.wsd
+            ├── data_access_call_sequence_diagram.wsd
+            ├── llm_retrieval.wsd
+            ├── services_diagram.wsd
+            ├── tool_calling.wsd
+            └── use_case.wsd

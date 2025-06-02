@@ -1,0 +1,10 @@
+[project]
+name = "user-chat"
+version = "0.1.0"
+description = "Eprice App User chat"
+requires-python = ">=3.13"
+dependencies = [
+    "ollama>=0.4.8",
+    "gradio==5.23.3",
+    "dotenv==0.9.9",
+]

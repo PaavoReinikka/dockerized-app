@@ -1,0 +1,954 @@
+[
+  {
+    "file": "./App/python-server/models/custom_exception.py",
+    "type": "module",
+    "name": "__module__",
+    "docstring": "custom_exception.py\n\nThis module defines a custom exception handler for FastAPI request validation errors.\nIt provides a user-friendly JSON error response when request data fails validation.",
+    "start_line": 1,
+    "code": ""
+  },
+  {
+    "file": "./App/python-server/models/custom_exception.py",
+    "type": "function",
+    "name": "models.custom_exception.custom_validation_exception_handler",
+    "docstring": "Custom handler for FastAPI RequestValidationError.\n\nArgs:\n    request (Request): The incoming FastAPI request.\n    exc (RequestValidationError): The validation exception raised by FastAPI.\n\nReturns:\n    JSONResponse: A JSON response with error details and HTTP status 422.",
+    "start_line": 14,
+    "code": "async def custom_validation_exception_handler(request: Request, exc: RequestValidationError):\n    \"\"\"\n    Custom handler for FastAPI RequestValidationError.\n\n    Args:\n        request (Request): The incoming FastAPI request.\n        exc (RequestValidationError): The validation exception raised by FastAPI.\n\n    Returns:\n        JSONResponse: A JSON response with error details and HTTP status 422.\n    \"\"\"\n    status_code = 422\n    if exc.errors():\n        error_detail = exc.errors()[0]\n        # Extracting the first error detail\n        loc_list = error_detail.get(\"loc\", [])\n        str_parts = [str(loc) for loc in loc_list]\n        loc_str = \".\".join(str_parts)\n\n        msg = error_detail.get(\"msg\", \"Validation error\")\n        type_str = error_detail.get(\"type\", \"validation_error\")\n\n        error_message = (\n            f\"{msg}.\"\n        )\n\n    else:\n        error_message = f\"Validation failed for unknown reason.\"\n\n    return JSONResponse(\n        status_code=status_code,\n        content={\n            \"error\": \"RequestValidationError\",\n            \"message\": error_message"
+  },
+  {
+    "file": "./App/python-server/models/data_model.py",
+    "type": "module",
+    "name": "__module__",
+    "docstring": "data_model.py\n\nThis module defines Pydantic data models used throughout the Eprice backend service.\nIt includes models for time ranges, Fingrid and price data points, error responses,\nand utility base classes for datetime validation.",
+    "start_line": 1,
+    "code": ""
+  },
+  {
+    "file": "./App/python-server/models/data_model.py",
+    "type": "class",
+    "name": "models.data_model.DateTimeValidatedModel",
+    "docstring": "Base model that validates datetime fields to ensure they are in ISO 8601 format.\nFields validated: 'startTime', 'endTime', 'timestamp', 'startDate'.",
+    "start_line": 13,
+    "code": "class DateTimeValidatedModel(BaseModel):\n    \"\"\"\n    Base model that validates datetime fields to ensure they are in ISO 8601 format.\n    Fields validated: 'startTime', 'endTime', 'timestamp', 'startDate'.\n    \"\"\"\n    @classmethod\n    @field_validator('startTime', 'endTime', 'timestamp', 'startDate', mode='before')\n    def validate_datetime(cls, v):\n        \"\"\"\n        Validates that the provided value is a valid ISO 8601 datetime string.\n        \"\"\"\n        datetime.fromisoformat(v.replace(\"Z\", \"+00:00\"))\n        return v"
+  },
+  {
+    "file": "./App/python-server/models/data_model.py",
+    "type": "class",
+    "name": "models.data_model.StartDateModel",
+    "docstring": "Model containing a single startDate field as a datetime object.",
+    "start_line": 27,
+    "code": "class StartDateModel(BaseModel):\n    \"\"\"\n    Model containing a single startDate field as a datetime object.\n    \"\"\"\n    startDate: datetime"
+  },
+  {
+    "file": "./App/python-server/models/data_model.py",
+    "type": "class",
+    "name": "models.data_model.TimeRange",
+    "docstring": "Model representing a time range with start and end times.\n\nAttributes:\n    startTime (datetime): Start time in RFC 3339 format.\n    endTime (datetime): End time in RFC 3339 format.",
+    "start_line": 33,
+    "code": "class TimeRange(DateTimeValidatedModel):\n    \"\"\"\n    Model representing a time range with start and end times.\n\n    Attributes:\n        startTime (datetime): Start time in RFC 3339 format.\n        endTime (datetime): End time in RFC 3339 format.\n    \"\"\"\n    startTime: datetime = Field(\n        description=\"Start time in RFC 3339 format (e.g., 2024-05-01T00:00:00Z)\",\n        examples=[\"2024-05-01T00:00:00Z\"]\n    )\n    endTime: datetime = Field(\n        examples=[\"2024-05-02T00:00:00Z\"],\n        description=\"End time in RFC 3339 format (e.g., 2024-05-02T00:00:00Z)\""
+  },
+  {
+    "file": "./App/python-server/models/data_model.py",
+    "type": "class",
+    "name": "models.data_model.TimeRangeRequest",
+    "docstring": "Request model for endpoints requiring a time range.\nProvides helper methods to ensure start and end times are returned as datetime objects.",
+    "start_line": 50,
+    "code": "class TimeRangeRequest(TimeRange):\n    \"\"\"\n    Request model for endpoints requiring a time range.\n    Provides helper methods to ensure start and end times are returned as datetime objects.\n    \"\"\"\n    def start_datetime(self) -> datetime:\n        \"\"\"\n        Returns the start time as a datetime object, parsing from string if necessary.\n\n        Returns:\n            datetime: The start time as a datetime object.\n        \"\"\"\n        if isinstance(self.startTime, str):\n            return datetime.fromisoformat(str(self.startTime).replace(\"Z\", \"+00:00\"))\n        elif isinstance(self.startTime, datetime):\n            return self.startTime\n        else:\n            raise TypeError(\"startTime must be a string or datetime object\")\n\n    def end_datetime(self) -> datetime:\n        \"\"\"\n        Returns the end time as a datetime object, parsing from string if necessary.\n\n        Returns:\n            datetime: The end time as a datetime object.\n        \"\"\"\n        if isinstance(self.endTime, str):\n            return datetime.fromisoformat(str(self.endTime).replace(\"Z\", \"+00:00\"))\n        elif isinstance(self.endTime, datetime):\n            return self.endTime\n        else:\n            raise TypeError(\"endTime must be a string or datetime object\")"
+  },
+  {
+    "file": "./App/python-server/models/data_model.py",
+    "type": "class",
+    "name": "models.data_model.FingridDataPoint",
+    "docstring": "Model representing a single data point from Fingrid, including a value (in megawatts) and time range.\n\nAttributes:\n    value (float): Value of the data point in megawatts (MW), must be non-negative.",
+    "start_line": 83,
+    "code": "class FingridDataPoint(TimeRange):\n    \"\"\"\n    Model representing a single data point from Fingrid, including a value (in megawatts) and time range.\n\n    Attributes:\n        value (float): Value of the data point in megawatts (MW), must be non-negative.\n    \"\"\"\n    value: float = Field(\n        examples=[7883.61],\n        description=\"Value of the data point in megawatts (MW)\"\n    )\n\n    @field_validator(\"value\")\n    def validate_value_positive(cls, v):\n        \"\"\"\n        Validates that the value is non-negative.\n\n        Raises:\n            ValueError: If the value is negative.\n        \"\"\"\n        if v < 0:\n            raise ValueError(\"value must be non-negative\")\n        return v"
+  },
+  {
+    "file": "./App/python-server/models/data_model.py",
+    "type": "class",
+    "name": "models.data_model.PriceDataPoint",
+    "docstring": "Model representing a single electricity price data point.\n\nAttributes:\n    startDate (datetime): Start time of the price data point in UTC.\n    price (float): Price in euro cents.",
+    "start_line": 107,
+    "code": "class PriceDataPoint(StartDateModel):\n    \"\"\"\n    Model representing a single electricity price data point.\n\n    Attributes:\n        startDate (datetime): Start time of the price data point in UTC.\n        price (float): Price in euro cents.\n    \"\"\"\n    startDate: datetime = Field(\n        description=\"UTC str in RFC 3339 format\",\n        examples=[\"2025-05-08T04:00:00.000Z\"]\n    )\n    price: float = Field(\n        description=\"Floating-point number representing the price in euro cents\",\n        examples=[0.61]"
+  },
+  {
+    "file": "./App/python-server/models/data_model.py",
+    "type": "class",
+    "name": "models.data_model.HourlyAvgPricePoint",
+    "docstring": "Model representing an hourly average price point.\n\nAttributes:\n        Hour (int): Hour of the day (0-23)\n        AvgPrice (float): Average price in euro cents for that hour",
+    "start_line": 124,
+    "code": "class HourlyAvgPricePoint(BaseModel):\n    \"\"\"\n    Model representing an hourly average price point.\n\n    Attributes:\n            Hour (int): Hour of the day (0-23)\n            AvgPrice (float): Average price in euro cents for that hour\n    \"\"\"\n    hour: int = Field(\n        description=\"Hour of the day (0-23) in Zulu time\",\n        examples=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]\n    )\n    avgPrice: float = Field(\n        description=\"Average price in euro cents for that hour\",\n        examples=[0.61]"
+  },
+  {
+    "file": "./App/python-server/models/data_model.py",
+    "type": "class",
+    "name": "models.data_model.PriceAvgByWeekdayPoint",
+    "docstring": "Model representing average price by weekday.\nAttributes:\n    weekday (int): Day of the week (0=Monday, 6=Sunday).\n    avgPrice (float): Average price in euro cents for that weekday.",
+    "start_line": 142,
+    "code": "class PriceAvgByWeekdayPoint(BaseModel):\n    \"\"\"\n    Model representing average price by weekday.\n    Attributes:\n        weekday (int): Day of the week (0=Monday, 6=Sunday).\n        avgPrice (float): Average price in euro cents for that weekday.\n    \"\"\"\n    weekday: int = Field(\n        description=\"Day of the week (0=Monday, 6=Sunday)\",\n        examples=[0, 1, 2, 3, 4, 5, 6]\n    )\n    avgPrice: float = Field(\n        description=\"Average price in euro cents for that weekday\",\n        examples=[0.61]"
+  },
+  {
+    "file": "./App/python-server/models/data_model.py",
+    "type": "class",
+    "name": "models.data_model.ErrorResponse",
+    "docstring": "Model for error responses returned by the API.\n\nAttributes:\n    error (str): Error message describing the issue.",
+    "start_line": 158,
+    "code": "class ErrorResponse(BaseModel):\n    \"\"\"\n    Model for error responses returned by the API.\n\n    Attributes:\n        error (str): Error message describing the issue.\n    \"\"\"\n    error: str = Field(\n        description=\"Error message describing the issue.\",\n        examples=[\"An error occurred\"]"
+  },
+  {
+    "file": "./App/python-server/models/data_model.py",
+    "type": "function",
+    "name": "models.data_model.DateTimeValidatedModel.validate_datetime",
+    "docstring": "Validates that the provided value is a valid ISO 8601 datetime string.",
+    "start_line": 20,
+    "code": "    def validate_datetime(cls, v):\n        \"\"\"\n        Validates that the provided value is a valid ISO 8601 datetime string.\n        \"\"\"\n        datetime.fromisoformat(v.replace(\"Z\", \"+00:00\"))\n        return v"
+  },
+  {
+    "file": "./App/python-server/models/data_model.py",
+    "type": "function",
+    "name": "models.data_model.TimeRangeRequest.start_datetime",
+    "docstring": "Returns the start time as a datetime object, parsing from string if necessary.\n\nReturns:\n    datetime: The start time as a datetime object.",
+    "start_line": 55,
+    "code": "    def start_datetime(self) -> datetime:\n        \"\"\"\n        Returns the start time as a datetime object, parsing from string if necessary.\n\n        Returns:\n            datetime: The start time as a datetime object.\n        \"\"\"\n        if isinstance(self.startTime, str):\n            return datetime.fromisoformat(str(self.startTime).replace(\"Z\", \"+00:00\"))\n        elif isinstance(self.startTime, datetime):\n            return self.startTime\n        else:\n            raise TypeError(\"startTime must be a string or datetime object\")"
+  },
+  {
+    "file": "./App/python-server/models/data_model.py",
+    "type": "function",
+    "name": "models.data_model.TimeRangeRequest.end_datetime",
+    "docstring": "Returns the end time as a datetime object, parsing from string if necessary.\n\nReturns:\n    datetime: The end time as a datetime object.",
+    "start_line": 69,
+    "code": "    def end_datetime(self) -> datetime:\n        \"\"\"\n        Returns the end time as a datetime object, parsing from string if necessary.\n\n        Returns:\n            datetime: The end time as a datetime object.\n        \"\"\"\n        if isinstance(self.endTime, str):\n            return datetime.fromisoformat(str(self.endTime).replace(\"Z\", \"+00:00\"))\n        elif isinstance(self.endTime, datetime):\n            return self.endTime\n        else:\n            raise TypeError(\"endTime must be a string or datetime object\")"
+  },
+  {
+    "file": "./App/python-server/models/data_model.py",
+    "type": "function",
+    "name": "models.data_model.FingridDataPoint.validate_value_positive",
+    "docstring": "Validates that the value is non-negative.\n\nRaises:\n    ValueError: If the value is negative.",
+    "start_line": 96,
+    "code": "    def validate_value_positive(cls, v):\n        \"\"\"\n        Validates that the value is non-negative.\n\n        Raises:\n            ValueError: If the value is negative.\n        \"\"\"\n        if v < 0:\n            raise ValueError(\"value must be non-negative\")\n        return v"
+  },
+  {
+    "file": "./App/python-server/models/user_model.py",
+    "type": "module",
+    "name": "__module__",
+    "docstring": "user_model.py defines Pydantic models for user-related data validation in the Eprice backend.\n\nModels:\n- EmailRequest: Validates and represents an email address for requests such as verification code resending.\n- UserCode: Validates an email and a verification code, ensuring the code matches the required format (ABC-123).\n- User: Validates user registration and login data, enforcing email format and password strength.\n\nAll models use Pydantic for type validation and include custom field validators for additional constraints.\n\nIntended Usage:\n- Used in FastAPI route handlers for request body validation.\n- Ensures consistent and secure data formats for authentication and user management endpoints.",
+    "start_line": 1,
+    "code": ""
+  },
+  {
+    "file": "./App/python-server/models/user_model.py",
+    "type": "class",
+    "name": "models.user_model.EmailRequest",
+    "docstring": "Pydantic model for validating an email address in request bodies.\nThis can be extended with additional validation rules as needed.\n\nAttributes:\n    email (EmailStr): The user's email address.\n\nRaises:\n    ValidationError: If the email address is not valid.\n    Custom exception handler is set up in the main(entrypoint) file.",
+    "start_line": 20,
+    "code": "class EmailRequest(BaseModel):\n    \"\"\"\n    Pydantic model for validating an email address in request bodies.\n    This can be extended with additional validation rules as needed.\n\n    Attributes:\n        email (EmailStr): The user's email address.\n    \n    Raises:\n        ValidationError: If the email address is not valid.\n        Custom exception handler is set up in the main(entrypoint) file.\n    \"\"\"\n    email: EmailStr"
+  },
+  {
+    "file": "./App/python-server/models/user_model.py",
+    "type": "class",
+    "name": "models.user_model.UserCode",
+    "docstring": "Pydantic model for validating an email and verification code.\n\nAttributes:\n    email (EmailStr): The user's email address.\n    code (str): The verification code in format ABC-123.",
+    "start_line": 34,
+    "code": "class UserCode(BaseModel):\n    \"\"\"\n    Pydantic model for validating an email and verification code.\n\n    Attributes:\n        email (EmailStr): The user's email address.\n        code (str): The verification code in format ABC-123.\n    \"\"\"\n    email: EmailStr\n    code: str\n\n    @field_validator('code')\n    def validate_code(cls, code: str) -> str:\n        \"\"\"\n        Validate that the verification code matches the required format (ABC-123).\n\n        Args:\n            code (str): The verification code to validate.\n\n        Returns:\n            str: The validated code.\n\n        Raises:\n            ValidationError: If the code does not match the required format.\n            Custom exception handler is set up in the main(entrypoint) file.\n        \"\"\"\n        pattern = r'^[A-Z]{3}-\\d{3}$'\n        if not re.match(pattern, code):\n            assert 0>10, \"Invalid code format. Expected format: ABC-123\"\n        return code"
+  },
+  {
+    "file": "./App/python-server/models/user_model.py",
+    "type": "class",
+    "name": "models.user_model.User",
+    "docstring": "Pydantic model for validating user registration and login data.\n\nAttributes:\n    email (EmailStr): The user's email address.\n    password (str): The user's password.",
+    "start_line": 65,
+    "code": "class User(BaseModel):\n    \"\"\"\n    Pydantic model for validating user registration and login data.\n\n    Attributes:\n        email (EmailStr): The user's email address.\n        password (str): The user's password.\n    \"\"\"\n    email: EmailStr\n    password: str\n\n    @field_validator('password')\n    def validate_password(cls, password: str) -> str:\n        \"\"\"\n        Validate that the password meets minimum strength requirements.\n\n        Args:\n            password (str): The password to validate.\n\n        Returns:\n            str: The validated password.\n\n        Raises:\n            ValidationError: If the password does not meet the minimum length requirement.\n            Custom exception handler is set up in the main(entrypoint) file.\n        \"\"\"\n        assert len(password) >= 4, \"Password must be at least 4 characters long\"\n        return password"
+  },
+  {
+    "file": "./App/python-server/models/user_model.py",
+    "type": "function",
+    "name": "models.user_model.UserCode.validate_code",
+    "docstring": "Validate that the verification code matches the required format (ABC-123).\n\nArgs:\n    code (str): The verification code to validate.\n\nReturns:\n    str: The validated code.\n\nRaises:\n    ValidationError: If the code does not match the required format.\n    Custom exception handler is set up in the main(entrypoint) file.",
+    "start_line": 46,
+    "code": "    def validate_code(cls, code: str) -> str:\n        \"\"\"\n        Validate that the verification code matches the required format (ABC-123).\n\n        Args:\n            code (str): The verification code to validate.\n\n        Returns:\n            str: The validated code.\n\n        Raises:\n            ValidationError: If the code does not match the required format.\n            Custom exception handler is set up in the main(entrypoint) file.\n        \"\"\"\n        pattern = r'^[A-Z]{3}-\\d{3}$'\n        if not re.match(pattern, code):\n            assert 0>10, \"Invalid code format. Expected format: ABC-123\"\n        return code"
+  },
+  {
+    "file": "./App/python-server/models/user_model.py",
+    "type": "function",
+    "name": "models.user_model.User.validate_password",
+    "docstring": "Validate that the password meets minimum strength requirements.\n\nArgs:\n    password (str): The password to validate.\n\nReturns:\n    str: The validated password.\n\nRaises:\n    ValidationError: If the password does not meet the minimum length requirement.\n    Custom exception handler is set up in the main(entrypoint) file.",
+    "start_line": 77,
+    "code": "    def validate_password(cls, password: str) -> str:\n        \"\"\"\n        Validate that the password meets minimum strength requirements.\n\n        Args:\n            password (str): The password to validate.\n\n        Returns:\n            str: The validated password.\n\n        Raises:\n            ValidationError: If the password does not meet the minimum length requirement.\n            Custom exception handler is set up in the main(entrypoint) file.\n        \"\"\"\n        assert len(password) >= 4, \"Password must be at least 4 characters long\"\n        return password"
+  },
+  {
+    "file": "./App/python-server/scheduled_tasks/porssisahko_scheduler.py",
+    "type": "module",
+    "name": "__module__",
+    "docstring": "porssisahko_scheduler.py defines scheduled tasks for fetching and inserting electricity price data into the Eprice backend database.\n\nFeatures:\n- Periodically fetches the latest price data from the Pörssisähkö API and inserts it into the database.\n- Detects and fills missing hourly price entries by querying the API for specific dates and hours.\n- Uses APScheduler to schedule tasks at specified intervals or times.\n- Provides synchronous wrappers for running asynchronous tasks in a scheduler context.\n- Handles API and database errors with logging for monitoring and debugging.\n\nDependencies:\n- requests for HTTP requests to the external API.\n- apscheduler for scheduling background tasks.\n- repositories.porssisahko_repository for database operations.\n- config.secrets for database configuration.\n- asyncio for running async functions in a synchronous context.\n\nIntended Usage:\n- Used as part of the backend service to ensure the database is kept up-to-date with the latest and complete price data.\n- Can be extended with additional scheduled tasks or triggers as needed.",
+    "start_line": 1,
+    "code": ""
+  },
+  {
+    "file": "./App/python-server/scheduled_tasks/porssisahko_scheduler.py",
+    "type": "function",
+    "name": "scheduled_tasks.porssisahko_scheduler.fetch_and_insert_porssisahko_data",
+    "docstring": "Fetch the latest price data from the Pörssisähkö API and insert it into the database.\n\nRaises:\n    requests.RequestException: If there is an error fetching data from the API.\n    Exception: For any unexpected errors during data insertion.",
+    "start_line": 36,
+    "code": "async def fetch_and_insert_porssisahko_data():\n    \"\"\"\n    Fetch the latest price data from the Pörssisähkö API and insert it into the database.\n\n    Raises:\n        requests.RequestException: If there is an error fetching data from the API.\n        Exception: For any unexpected errors during data insertion.\n    \"\"\"\n    try:\n        # Fetch data from the API\n        response = requests.get(\"https://api.porssisahko.net/v1/latest-prices.json\")\n        response.raise_for_status() # Raise an exception for HTTP errors\n        data = response.json()\n\n        # Insert the data into the database using the repository\n        await porssisahko_repository.insert_entries(data[\"prices\"])\n\n        print(f\"Database successfully updated at {datetime.now()}\")\n    except requests.RequestException as e:\n        print(f\"Error fetching data from the API: {e}\")\n    except Exception as e:\n        print(f\"Unexpected error: {e}\")"
+  },
+  {
+    "file": "./App/python-server/scheduled_tasks/porssisahko_scheduler.py",
+    "type": "function",
+    "name": "scheduled_tasks.porssisahko_scheduler.fetch_and_insert_missing_porssisahko_data",
+    "docstring": "Detect and insert missing hourly price entries into the database.\n\nArgs:\n    start_datetime_str (str): The ISO format string representing the start datetime.\n\nRaises:\n    requests.RequestException: If there is an error fetching data from the API.\n    Exception: For any unexpected errors during data insertion.",
+    "start_line": 60,
+    "code": "async def fetch_and_insert_missing_porssisahko_data(start_datetime_str: str):\n    \"\"\"\n    Detect and insert missing hourly price entries into the database.\n\n    Args:\n        start_datetime_str (str): The ISO format string representing the start datetime.\n\n    Raises:\n        requests.RequestException: If there is an error fetching data from the API.\n        Exception: For any unexpected errors during data insertion.\n    \"\"\"\n    try:\n        # Convert the start_datetime string to a datetime object (db likes ISO format)\n        start_datetime = datetime.fromisoformat(start_datetime_str)\n        \n        # Calculate the end datetime (24 hours later)\n        end_datetime = datetime.now() + timedelta(days=1)\n        end_datetime = end_datetime.replace(minute=0, second=0, microsecond=0)\n        \n        # Retrieve missing entries from the repository\n        missing_entries = await porssisahko_repository.get_missing_entries(\n            start_datetime, end_datetime\n        )\n\n        if not missing_entries:\n            print(f\"No missing entries found between {start_datetime} and {end_datetime}.\")\n            return\n\n        print(f\"Found {len(missing_entries)} missing entries. Fetching data...\")\n\n        # Fetch data for the missing entries\n        for date, hour in missing_entries:\n            # Construct the API URL for the specific date and hour\n            api_url = f\"https://api.porssisahko.net/v1/price.json?date={date}&hour={hour}\"\n            response = requests.get(api_url)\n            response.raise_for_status()  # Raise an exception for HTTP errors\n            data = response.json()  # Parse the JSON response\n\n            # NOTE: Since there is inconsistency in the API response format, we need to handle both cases:\n            # latest prices (utc) and hourly prices (helsinki time)\n            # Insert the data into the database -- datetime format:  \"2022-11-14THH:00:00.000Z\"\n            await porssisahko_repository.insert_entry(data[\"price\"], f\"{date}T{(hour):02d}:00.000Z\", convert_to_helsinki_time=False)\n\n        print(f\"Missing data successfully inserted into the database.\")\n    except requests.RequestException as e:\n        print(f\"Error fetching data from the API: {e}\")\n    except Exception as e:\n        print(f\"Unexpected error: {e}\")"
+  },
+  {
+    "file": "./App/python-server/scheduled_tasks/porssisahko_scheduler.py",
+    "type": "function",
+    "name": "scheduled_tasks.porssisahko_scheduler.fetch_and_insert_porssisahko_data_sync",
+    "docstring": "Synchronous wrapper to run fetch_and_insert_porssisahko_data in an event loop.",
+    "start_line": 111,
+    "code": "def fetch_and_insert_porssisahko_data_sync():\n    \"\"\"\n    Synchronous wrapper to run fetch_and_insert_porssisahko_data in an event loop.\n    \"\"\"\n    asyncio.run(fetch_and_insert_porssisahko_data())"
+  },
+  {
+    "file": "./App/python-server/scheduled_tasks/porssisahko_scheduler.py",
+    "type": "function",
+    "name": "scheduled_tasks.porssisahko_scheduler.fetch_and_insert_missing_porssisahko_data_sync",
+    "docstring": "Synchronous wrapper to run fetch_and_insert_missing_porssisahko_data in an event loop.\n\nArgs:\n    start_datetime_str (str): The ISO format string representing the start datetime.",
+    "start_line": 117,
+    "code": "def fetch_and_insert_missing_porssisahko_data_sync(start_datetime_str: str):\n    \"\"\"\n    Synchronous wrapper to run fetch_and_insert_missing_porssisahko_data in an event loop.\n\n    Args:\n        start_datetime_str (str): The ISO format string representing the start datetime.\n    \"\"\"\n    asyncio.run(fetch_and_insert_missing_porssisahko_data(start_datetime_str))"
+  },
+  {
+    "file": "./App/python-server/scheduled_tasks/porssisahko_scheduler.py",
+    "type": "function",
+    "name": "scheduled_tasks.porssisahko_scheduler.shutdown_scheduler",
+    "docstring": "Shut down the APScheduler instance gracefully on application exit.",
+    "start_line": 139,
+    "code": "def shutdown_scheduler():\n    \"\"\"\n    Shut down the APScheduler instance gracefully on application exit.\n    \"\"\"\n    print(\"Shutting down scheduler...\")\n    ps_scheduler.shutdown()"
+  },
+  {
+    "file": "./App/python-server/utils/email_tools.py",
+    "type": "module",
+    "name": "__module__",
+    "docstring": "email_tools.py provides utility functions for sending emails in the Eprice backend.\n\nFeatures:\n- Asynchronous email sending using FastAPI-Mail.\n- Configures SMTP connection using environment variables from the secrets configuration.\n- Sends verification emails with a code and a direct verification link for user registration and authentication flows.\n\nDependencies:\n- fastapi_mail for asynchronous email delivery.\n- config.secrets for SMTP credentials and configuration.\n\nIntended Usage:\n- Used by authentication and user management services to send verification codes to users.\n- Can be extended for other email-related utilities as needed.",
+    "start_line": 1,
+    "code": ""
+  },
+  {
+    "file": "./App/python-server/utils/email_tools.py",
+    "type": "function",
+    "name": "utils.email_tools.send_email_async",
+    "docstring": "Send an email asynchronously with a verification code and a link to verify the email address.\n\nArgs:\n    email_to (str): The recipient's email address.\n    verification_code (str): The verification code to be sent in the email.",
+    "start_line": 40,
+    "code": "async def send_email_async(email_to: str, verification_code: str):\n    '''\n    Send an email asynchronously with a verification code and a link to verify the email address.\n\n    Args:\n        email_to (str): The recipient's email address.\n        verification_code (str): The verification code to be sent in the email.\n    '''\n\n    subject = 'Verify your email address'\n    body = f'''\n    <html>\n        <body style=\"font-family: Arial, sans-serif; text-align: center;\">\n            <h1>Verify your email address</h1>\n            <p>Use the code below to verify your email address:</p>\n            <div style=\"display: inline-block; margin: 20px auto; padding: 16px 32px; background: #f3f3f3; border-radius: 8px; font-size: 2em; font-weight: bold; color: #333;\">\n                {verification_code}\n            </div>\n            <p>Or click the link below to verify directly:</p>\n            <a href=\"http://localhost:5173/auth/verify?email={email_to}&code={verification_code}\"\n               style=\"display: inline-block; margin-top: 16px; padding: 12px 24px; background: #2563eb; color: #fff; text-decoration: none; border-radius: 6px; font-size: 1.1em;\">\n                Verify Email\n            </a>\n        </body>\n    </html>\n    '''\n    message = MessageSchema(\n        subject=subject,\n        recipients=[email_to],\n        body=body,\n        subtype='html',\n    )\n    \n    fm = FastMail(conf)\n    await fm.send_message(message, template_name='email.html')"
+  },
+  {
+    "file": "./App/python-server/utils/porssisahko_tools.py",
+    "type": "module",
+    "name": "__module__",
+    "docstring": "porssisahko_tools.py provides utility functions for working with price data and database readiness in the Eprice backend.\n\nFeatures:\n- Asynchronous function to wait for the PostgreSQL database to become available before starting the application.\n- Conversion utility to transform price and ISO 8601 date data into a dictionary format suitable for the porssisahko table.\n\nIntended Usage:\n- Used by repository and service layers to ensure database readiness and to prepare data for insertion into the porssisahko table.\n- Can be extended with additional utilities for price data processing as needed.\n\nDependencies:\n- asyncpg for asynchronous PostgreSQL operations.\n- Python standard library modules: datetime and time.",
+    "start_line": 1,
+    "code": ""
+  },
+  {
+    "file": "./App/python-server/utils/porssisahko_tools.py",
+    "type": "function",
+    "name": "utils.porssisahko_tools.wait_for_database",
+    "docstring": "Wait for the database to be ready by attempting to connect to it.\n\nArgs:\n    database_url: The URL of the database to connect to.\n\nRaises:\n    Exception: If the database is not ready after multiple attempts.\n    (logs attempts and failure)",
+    "start_line": 22,
+    "code": "async def wait_for_database(database_url):\n    \"\"\"\n    Wait for the database to be ready by attempting to connect to it.\n\n    Args:\n        database_url: The URL of the database to connect to.\n\n    Raises:\n        Exception: If the database is not ready after multiple attempts.\n        (logs attempts and failure)\n    \"\"\"\n    max_retries = 10\n    retry_delay = 5  # seconds\n    for attempt in range(max_retries):\n        try:\n            conn = await asyncpg.connect(database_url)\n            await conn.close()\n            print(\"Database is ready.\")\n            return\n        except Exception as e:\n            print(f\"Database not ready (attempt {attempt + 1}/{max_retries}): {e}\")\n            time.sleep(retry_delay)\n    raise Exception(\"Database is not ready after multiple attempts.\")"
+  },
+  {
+    "file": "./App/python-server/utils/porssisahko_tools.py",
+    "type": "function",
+    "name": "utils.porssisahko_tools.convert_to_porssisahko_entry",
+    "docstring": "Converts a price and ISO 8601 date into a dictionary for the porssisahko table.\n\nArgs:\n    price (float): The price value.\n    iso_date (str): The date in ISO 8601 format (e.g., \"2022-11-14T22:00:00.000Z\").\n    predicted (bool): Indicates if the price is predicted. Default is False.\nReturns:\n    dict: A dictionary with keys: Datetime, Date, Year, Month, Day, Hour, Weekday, Price, Predicted.\nRaises:\n    ValueError: If the ISO date is not in the correct format.",
+    "start_line": 47,
+    "code": "def convert_to_porssisahko_entry(price, iso_date, predicted=False, convert_to_helsinki_time=True):\n    \"\"\"\n    Converts a price and ISO 8601 date into a dictionary for the porssisahko table.\n\n    Args:\n        price (float): The price value.\n        iso_date (str): The date in ISO 8601 format (e.g., \"2022-11-14T22:00:00.000Z\").\n        predicted (bool): Indicates if the price is predicted. Default is False.\n    Returns:\n        dict: A dictionary with keys: Datetime, Date, Year, Month, Day, Hour, Weekday, Price, Predicted.\n    Raises:\n        ValueError: If the ISO date is not in the correct format.\n    \"\"\"\n    try:\n        if convert_to_helsinki_time:\n            # Parse the ISO date string to a UTC datetime\n            dt_utc = datetime.fromisoformat(iso_date.replace(\"Z\", \"+00:00\"))\n            # Convert to Helsinki time\n            dt_helsinki = dt_utc.astimezone(ZoneInfo(\"Europe/Helsinki\"))\n            dt_naive = dt_helsinki.replace(tzinfo=None)\n        else:\n            # Parse the ISO date string to a naive datetime (UTC)\n            dt_naive = datetime.fromisoformat(iso_date.replace(\"Z\", \"+00:00\")).replace(tzinfo=None)\n        # Extract the weekday\n        weekday = dt_naive.weekday()\n\n        # Return the dictionary\n        return {\n            \"datetime\": dt_naive,  # Use offset-naive datetime\n            \"date\": dt_naive.date(),  # Extract the date part\n            \"year\": dt_naive.year,\n            \"month\": dt_naive.month,\n            \"day\": dt_naive.day,\n            \"hour\": dt_naive.hour,\n            \"weekday\": weekday,\n            \"price\": price,\n            \"predicted\": predicted\n        }\n    except ValueError as e:\n        # Handle invalid date format or parsing errors\n        raise ValueError(f\"Invalid ISO date format: {iso_date}. Error: {e}\")"
+  },
+  {
+    "file": "./App/python-server/utils/porssisahko_service_tools.py",
+    "type": "module",
+    "name": "__module__",
+    "docstring": "porssisahko_service_tools.py\n\nThis module provides helper services for handling electricity price data time ranges, \nconverting database results to application models, and filling missing data entries \nfrom external APIs. It is used to unify and process price data from both the database \nand external sources for the Eprice backend.",
+    "start_line": 1,
+    "code": ""
+  },
+  {
+    "file": "./App/python-server/utils/porssisahko_service_tools.py",
+    "type": "class",
+    "name": "utils.porssisahko_service_tools.PorssisahkoServiceTools",
+    "docstring": "PorssisahkoServiceTools has functions for time range calculations, data conversion, and filling missing entries.",
+    "start_line": 18,
+    "code": "class PorssisahkoServiceTools:\n    \"\"\"\n    PorssisahkoServiceTools has functions for time range calculations, data conversion, and filling missing entries.\n    \"\"\"\n\n    def __init__(self, ext_api_fetcher: FetchPriceData, database_fetcher: PorssisahkoRepository):\n        \"\"\"\n        Initialize the PorssisahkoServiceTools with external API and database fetchers.\n        \"\"\"\n        self.ext_api_fetcher = ext_api_fetcher\n        self.database_fetcher = database_fetcher\n\n    def expected_time_range(self) -> tuple[datetime, datetime]:\n        \"\"\"\n        Calculate the expected time range for the latest 48 hours based on Helsinki time.\n\n        Returns:\n            tuple[datetime, datetime]: Start and end datetimes (naive, Europe/Helsinki time).\n        \"\"\"\n        now_naive = datetime.now(ZoneInfo(\"Europe/Helsinki\")).replace(tzinfo=None)\n        if now_naive.hour >= 14:\n            end_time = (now_naive + timedelta(days=2)).replace(hour=0, minute=0, second=0, microsecond=0)\n        else:\n            end_time = (now_naive + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)\n        start_time = (end_time - timedelta(hours=48)).replace(tzinfo=None)\n        return start_time, end_time\n\n    def convert_to_price_data(self, data: List[dict]) -> List[PriceDataPoint]:\n        \"\"\"\n        Convert a list of database dicts to a sorted list of PriceDataPoint objects in UTC.\n\n        Args:\n            data (List[dict]): List of dicts with 'datetime' and 'price'.\n\n        Returns:\n            List[PriceDataPoint]: Sorted list of PriceDataPoint objects (startDate in UTC).\n        \"\"\"\n        if not data:\n            return []\n        return sorted([\n            PriceDataPoint(\n                startDate=item[\"datetime\"].astimezone(ZoneInfo(\"UTC\")),\n                price=item[\"price\"]\n            ) for item in data\n        ], key=lambda x: x.startDate, reverse=False)\n\n    async def fill_missing_entries(self, result: List[PriceDataPoint], missing_entries: List[PriceDataPoint]):\n        \"\"\"\n        Fetch and insert missing price data entries from the external API.\n\n        Args:\n            result (List[PriceDataPoint]): List to append new data points to (modified in place).\n            missing_entries (List[PriceDataPoint]): List of missing data points to fetch.\n\n        Side effects:\n            Updates the result list and inserts new entries into the database.\n        \"\"\"\n        for missing in missing_entries:\n            fetched = await self.ext_api_fetcher.fetch_price_data_range(missing.startDate, missing.startDate)\n            if not fetched:\n                continue\n\n            datapoint = fetched[0]\n            utc_dt = datetime.fromisoformat(datapoint[\"startDate\"])\n            iso_str = (utc_dt + timedelta(hours=0)).replace(microsecond=0).isoformat().replace(\"+00:00\", \"Z\")\n\n            result.append(PriceDataPoint(\n                startDate=utc_dt,\n                price=datapoint[\"price\"]\n            ))\n            await self.database_fetcher.insert_entry(\n                price=datapoint[\"price\"],\n                iso_date=iso_str\n            )\n\n    async def fetch_and_process_data(self, start_date: datetime, end_date: datetime) -> List[PriceDataPoint]:\n        \"\"\"\n        Fetch and process price data from the database, fill missing entries from the external API if needed.\n\n        Args:\n            start_date (datetime): Start of the time range.\n            end_date (datetime): End of the time range.\n\n        Returns:\n            List[PriceDataPoint]: Sorted list of price data points for the range, including filled-in values if needed.\n        \"\"\"\n        start_naive = start_date.replace(tzinfo=None)\n        end_naive = end_date.replace(tzinfo=None)\n\n        raw_data = await self.database_fetcher.get_entries(\n            start_date=start_naive,\n            end_date=end_naive,\n            select_columns=\"datetime, price\"\n        )\n\n\n        result = self.convert_to_price_data(raw_data)\n\n        missing_entries = self.find_missing_entries_utc(\n            start_date.astimezone(ZoneInfo(\"UTC\")),\n            end_date.astimezone(ZoneInfo(\"UTC\")),\n            result\n        )\n        if missing_entries:\n            await self.fill_missing_entries(result, missing_entries)\n\n        return sorted(result, key=lambda x: x.startDate, reverse=False)\n\n    def find_missing_entries_utc(self, start_date_utc: datetime, end_date_utc: datetime, data_utc: List[PriceDataPoint]):\n        \"\"\"\n        Find missing hourly entries in the given UTC time range.\n\n        Args:\n            start_date_utc (datetime): Start of the UTC time range.\n            end_date_utc (datetime): End of the UTC time range.\n            data_utc (List[PriceDataPoint]): List of available data points.\n\n        Returns:\n            List[StartDateModel]: List of StartDateModel objects for missing hours (all in UTC).\n        \"\"\"\n        result = []\n        current_date_utc = start_date_utc\n        while current_date_utc <= end_date_utc:\n            if not any(item.startDate == current_date_utc for item in data_utc):\n                result.append(StartDateModel(startDate=current_date_utc))\n            current_date_utc += timedelta(hours=1)\n        result.sort(key=lambda x: x.startDate, reverse=False)\n        return result\n\n    def calculate_hourly_avg_price(self, data):\n        \"\"\"\n        Calculate hourly average prices from a list of price data points.\n\n        Args:\n            data (List[PriceDataPoint]): List of price data points.\n\n        Returns:\n            List[PriceHourlyAvgPricePoint]: List of hourly average price points.\n        \"\"\"\n        hourly_avg = {}\n        for point in data:\n            hour = point.startDate.hour\n            if hour not in hourly_avg:\n                hourly_avg[hour] = []\n            hourly_avg[hour].append(point.price)\n\n        result = []\n        for hour, prices in hourly_avg.items():\n            avg_price = sum(prices) / len(prices)\n            avg_price = round(avg_price, 3)\n            result.append(HourlyAvgPricePoint(hour=hour, avgPrice=avg_price))\n\n        return sorted(result, key=lambda x: x.hour, reverse=False)\n    \n    def calculate_avg_by_weekday(self, data: List[PriceDataPoint], timezone_hki=False) -> List[PriceAvgByWeekdayPoint]:\n        \"\"\"\n        Calculate average price by weekday from a list of price data points.\n\n        Args:\n            data (List[PriceDataPoint]): List of price data points.\n\n        Returns:\n            List[PriceAvgByWeekdayPoint]: List of average prices by weekday.\n        \"\"\"\n        weekday_prices = {}\n        for point in data:\n            if timezone_hki == True:\n                weekday = point.startDate.astimezone(ZoneInfo(\"Europe/Helsinki\")).weekday()\n            else:\n                weekday = point.startDate.weekday()\n            if weekday not in weekday_prices:\n                weekday_prices[weekday] = []\n            weekday_prices[weekday].append(point.price)\n\n        result = []\n        for weekday, prices in weekday_prices.items():\n            avg_price = sum(prices) / len(prices)\n            avg_price = round(avg_price, 3)\n            result.append(PriceAvgByWeekdayPoint(weekday=weekday, avgPrice=avg_price))\n\n        return sorted(result, key=lambda x: x.weekday, reverse=False)"
+  },
+  {
+    "file": "./App/python-server/utils/porssisahko_service_tools.py",
+    "type": "function",
+    "name": "utils.porssisahko_service_tools.PorssisahkoServiceTools.__init__",
+    "docstring": "Initialize the PorssisahkoServiceTools with external API and database fetchers.",
+    "start_line": 23,
+    "code": "    def __init__(self, ext_api_fetcher: FetchPriceData, database_fetcher: PorssisahkoRepository):\n        \"\"\"\n        Initialize the PorssisahkoServiceTools with external API and database fetchers.\n        \"\"\"\n        self.ext_api_fetcher = ext_api_fetcher\n        self.database_fetcher = database_fetcher"
+  },
+  {
+    "file": "./App/python-server/utils/porssisahko_service_tools.py",
+    "type": "function",
+    "name": "utils.porssisahko_service_tools.PorssisahkoServiceTools.expected_time_range",
+    "docstring": "Calculate the expected time range for the latest 48 hours based on Helsinki time.\n\nReturns:\n    tuple[datetime, datetime]: Start and end datetimes (naive, Europe/Helsinki time).",
+    "start_line": 30,
+    "code": "    def expected_time_range(self) -> tuple[datetime, datetime]:\n        \"\"\"\n        Calculate the expected time range for the latest 48 hours based on Helsinki time.\n\n        Returns:\n            tuple[datetime, datetime]: Start and end datetimes (naive, Europe/Helsinki time).\n        \"\"\"\n        now_naive = datetime.now(ZoneInfo(\"Europe/Helsinki\")).replace(tzinfo=None)\n        if now_naive.hour >= 14:\n            end_time = (now_naive + timedelta(days=2)).replace(hour=0, minute=0, second=0, microsecond=0)\n        else:\n            end_time = (now_naive + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)\n        start_time = (end_time - timedelta(hours=48)).replace(tzinfo=None)\n        return start_time, end_time"
+  },
+  {
+    "file": "./App/python-server/utils/porssisahko_service_tools.py",
+    "type": "function",
+    "name": "utils.porssisahko_service_tools.PorssisahkoServiceTools.convert_to_price_data",
+    "docstring": "Convert a list of database dicts to a sorted list of PriceDataPoint objects in UTC.\n\nArgs:\n    data (List[dict]): List of dicts with 'datetime' and 'price'.\n\nReturns:\n    List[PriceDataPoint]: Sorted list of PriceDataPoint objects (startDate in UTC).",
+    "start_line": 45,
+    "code": "    def convert_to_price_data(self, data: List[dict]) -> List[PriceDataPoint]:\n        \"\"\"\n        Convert a list of database dicts to a sorted list of PriceDataPoint objects in UTC.\n\n        Args:\n            data (List[dict]): List of dicts with 'datetime' and 'price'.\n\n        Returns:\n            List[PriceDataPoint]: Sorted list of PriceDataPoint objects (startDate in UTC).\n        \"\"\"\n        if not data:\n            return []\n        return sorted([\n            PriceDataPoint(\n                startDate=item[\"datetime\"].astimezone(ZoneInfo(\"UTC\")),\n                price=item[\"price\"]\n            ) for item in data\n        ], key=lambda x: x.startDate, reverse=False)"
+  },
+  {
+    "file": "./App/python-server/utils/porssisahko_service_tools.py",
+    "type": "function",
+    "name": "utils.porssisahko_service_tools.PorssisahkoServiceTools.fill_missing_entries",
+    "docstring": "Fetch and insert missing price data entries from the external API.\n\nArgs:\n    result (List[PriceDataPoint]): List to append new data points to (modified in place).\n    missing_entries (List[PriceDataPoint]): List of missing data points to fetch.\n\nSide effects:\n    Updates the result list and inserts new entries into the database.",
+    "start_line": 64,
+    "code": "    async def fill_missing_entries(self, result: List[PriceDataPoint], missing_entries: List[PriceDataPoint]):\n        \"\"\"\n        Fetch and insert missing price data entries from the external API.\n\n        Args:\n            result (List[PriceDataPoint]): List to append new data points to (modified in place).\n            missing_entries (List[PriceDataPoint]): List of missing data points to fetch.\n\n        Side effects:\n            Updates the result list and inserts new entries into the database.\n        \"\"\"\n        for missing in missing_entries:\n            fetched = await self.ext_api_fetcher.fetch_price_data_range(missing.startDate, missing.startDate)\n            if not fetched:\n                continue\n\n            datapoint = fetched[0]\n            utc_dt = datetime.fromisoformat(datapoint[\"startDate\"])\n            iso_str = (utc_dt + timedelta(hours=0)).replace(microsecond=0).isoformat().replace(\"+00:00\", \"Z\")\n\n            result.append(PriceDataPoint(\n                startDate=utc_dt,\n                price=datapoint[\"price\"]\n            ))\n            await self.database_fetcher.insert_entry(\n                price=datapoint[\"price\"],\n                iso_date=iso_str"
+  },
+  {
+    "file": "./App/python-server/utils/porssisahko_service_tools.py",
+    "type": "function",
+    "name": "utils.porssisahko_service_tools.PorssisahkoServiceTools.fetch_and_process_data",
+    "docstring": "Fetch and process price data from the database, fill missing entries from the external API if needed.\n\nArgs:\n    start_date (datetime): Start of the time range.\n    end_date (datetime): End of the time range.\n\nReturns:\n    List[PriceDataPoint]: Sorted list of price data points for the range, including filled-in values if needed.",
+    "start_line": 93,
+    "code": "    async def fetch_and_process_data(self, start_date: datetime, end_date: datetime) -> List[PriceDataPoint]:\n        \"\"\"\n        Fetch and process price data from the database, fill missing entries from the external API if needed.\n\n        Args:\n            start_date (datetime): Start of the time range.\n            end_date (datetime): End of the time range.\n\n        Returns:\n            List[PriceDataPoint]: Sorted list of price data points for the range, including filled-in values if needed.\n        \"\"\"\n        start_naive = start_date.replace(tzinfo=None)\n        end_naive = end_date.replace(tzinfo=None)\n\n        raw_data = await self.database_fetcher.get_entries(\n            start_date=start_naive,\n            end_date=end_naive,\n            select_columns=\"datetime, price\"\n        )\n\n\n        result = self.convert_to_price_data(raw_data)\n\n        missing_entries = self.find_missing_entries_utc(\n            start_date.astimezone(ZoneInfo(\"UTC\")),\n            end_date.astimezone(ZoneInfo(\"UTC\")),\n            result\n        )\n        if missing_entries:\n            await self.fill_missing_entries(result, missing_entries)\n\n        return sorted(result, key=lambda x: x.startDate, reverse=False)"
+  },
+  {
+    "file": "./App/python-server/utils/porssisahko_service_tools.py",
+    "type": "function",
+    "name": "utils.porssisahko_service_tools.PorssisahkoServiceTools.find_missing_entries_utc",
+    "docstring": "Find missing hourly entries in the given UTC time range.\n\nArgs:\n    start_date_utc (datetime): Start of the UTC time range.\n    end_date_utc (datetime): End of the UTC time range.\n    data_utc (List[PriceDataPoint]): List of available data points.\n\nReturns:\n    List[StartDateModel]: List of StartDateModel objects for missing hours (all in UTC).",
+    "start_line": 126,
+    "code": "    def find_missing_entries_utc(self, start_date_utc: datetime, end_date_utc: datetime, data_utc: List[PriceDataPoint]):\n        \"\"\"\n        Find missing hourly entries in the given UTC time range.\n\n        Args:\n            start_date_utc (datetime): Start of the UTC time range.\n            end_date_utc (datetime): End of the UTC time range.\n            data_utc (List[PriceDataPoint]): List of available data points.\n\n        Returns:\n            List[StartDateModel]: List of StartDateModel objects for missing hours (all in UTC).\n        \"\"\"\n        result = []\n        current_date_utc = start_date_utc\n        while current_date_utc <= end_date_utc:\n            if not any(item.startDate == current_date_utc for item in data_utc):\n                result.append(StartDateModel(startDate=current_date_utc))\n            current_date_utc += timedelta(hours=1)\n        result.sort(key=lambda x: x.startDate, reverse=False)\n        return result"
+  },
+  {
+    "file": "./App/python-server/utils/porssisahko_service_tools.py",
+    "type": "function",
+    "name": "utils.porssisahko_service_tools.PorssisahkoServiceTools.calculate_hourly_avg_price",
+    "docstring": "Calculate hourly average prices from a list of price data points.\n\nArgs:\n    data (List[PriceDataPoint]): List of price data points.\n\nReturns:\n    List[PriceHourlyAvgPricePoint]: List of hourly average price points.",
+    "start_line": 147,
+    "code": "    def calculate_hourly_avg_price(self, data):\n        \"\"\"\n        Calculate hourly average prices from a list of price data points.\n\n        Args:\n            data (List[PriceDataPoint]): List of price data points.\n\n        Returns:\n            List[PriceHourlyAvgPricePoint]: List of hourly average price points.\n        \"\"\"\n        hourly_avg = {}\n        for point in data:\n            hour = point.startDate.hour\n            if hour not in hourly_avg:\n                hourly_avg[hour] = []\n            hourly_avg[hour].append(point.price)\n\n        result = []\n        for hour, prices in hourly_avg.items():\n            avg_price = sum(prices) / len(prices)\n            avg_price = round(avg_price, 3)\n            result.append(HourlyAvgPricePoint(hour=hour, avgPrice=avg_price))\n\n        return sorted(result, key=lambda x: x.hour, reverse=False)"
+  },
+  {
+    "file": "./App/python-server/utils/porssisahko_service_tools.py",
+    "type": "function",
+    "name": "utils.porssisahko_service_tools.PorssisahkoServiceTools.calculate_avg_by_weekday",
+    "docstring": "Calculate average price by weekday from a list of price data points.\n\nArgs:\n    data (List[PriceDataPoint]): List of price data points.\n\nReturns:\n    List[PriceAvgByWeekdayPoint]: List of average prices by weekday.",
+    "start_line": 172,
+    "code": "    def calculate_avg_by_weekday(self, data: List[PriceDataPoint], timezone_hki=False) -> List[PriceAvgByWeekdayPoint]:\n        \"\"\"\n        Calculate average price by weekday from a list of price data points.\n\n        Args:\n            data (List[PriceDataPoint]): List of price data points.\n\n        Returns:\n            List[PriceAvgByWeekdayPoint]: List of average prices by weekday.\n        \"\"\"\n        weekday_prices = {}\n        for point in data:\n            if timezone_hki == True:\n                weekday = point.startDate.astimezone(ZoneInfo(\"Europe/Helsinki\")).weekday()\n            else:\n                weekday = point.startDate.weekday()\n            if weekday not in weekday_prices:\n                weekday_prices[weekday] = []\n            weekday_prices[weekday].append(point.price)\n\n        result = []\n        for weekday, prices in weekday_prices.items():\n            avg_price = sum(prices) / len(prices)\n            avg_price = round(avg_price, 3)\n            result.append(PriceAvgByWeekdayPoint(weekday=weekday, avgPrice=avg_price))\n\n        return sorted(result, key=lambda x: x.weekday, reverse=False)"
+  },
+  {
+    "file": "./App/python-server/controllers/auth_controller.py",
+    "type": "module",
+    "name": "__module__",
+    "docstring": "auth_controller.py defines the authentication controller for the Eprice backend API using FastAPI.\nIt provides endpoints for user registration, login, logout, email verification, and resending verification codes.\nThe controller manages authentication logic, JWT token handling, and cookie management for session persistence.\n\nKey Endpoints:\n\nPOST /api/auth/register: Registers a new user and sends a confirmation email. Handles duplicate email errors.\nPOST /api/auth/login: Authenticates a user, checks email verification status, and issues a JWT token as an HTTP-only cookie.\nGET /api/auth/logout: Logs out the user by deleting the authentication cookie.\nPOST /api/auth/verify: Verifies a user's email using a code sent to their email address.\nPOST /api/auth/resend: Resends the email verification code to the user.\nThe controller uses dependency-injected service and repository layers for business logic and database access.\nIt also provides a JWT middleware factory for protecting private routes by validating JWT tokens from cookies and attaching user info to the request state.\n\nError handling is performed by setting appropriate HTTP status codes and returning informative messages for frontend handling.\nAll endpoints expect and return JSON payloads.\n\nDependencies:\n\nFastAPI for API routing and response handling.\njose for JWT encoding/decoding.\nasyncpg for async PostgreSQL operations.\nCustom modules for user models, authentication services, and configuration.\nThis controller is intended to be used as part of the FastAPI application and imported into the main app router. ",
+    "start_line": 1,
+    "code": ""
+  },
+  {
+    "file": "./App/python-server/controllers/auth_controller.py",
+    "type": "function",
+    "name": "controllers.auth_controller.register",
+    "docstring": "Registers a new user and sends a confirmation email.\n\nAttempts to create a new user account with the provided email and password.\nIf successful, sends a confirmation email with a verification code.\nHandles duplicate email registration and unexpected errors.\n\nArgs:\n    user (User): The user registration data (email and password).\n    response (Response): FastAPI response object for setting status codes.\n\nReturns:\n    dict: JSON message indicating success or the reason for failure.\n\nNOTE: email can raise fastapi_mail.errors.ConnectionErrors for SMTP connection issues,\n      or some other errors related to email sending.",
+    "start_line": 41,
+    "code": "async def register(user: User, response: Response):\n    \"\"\"\n    Registers a new user and sends a confirmation email.\n\n    Attempts to create a new user account with the provided email and password.\n    If successful, sends a confirmation email with a verification code.\n    Handles duplicate email registration and unexpected errors.\n\n    Args:\n        user (User): The user registration data (email and password).\n        response (Response): FastAPI response object for setting status codes.\n\n    Returns:\n        dict: JSON message indicating success or the reason for failure.\n\n    NOTE: email can raise fastapi_mail.errors.ConnectionErrors for SMTP connection issues,\n          or some other errors related to email sending.\n    \"\"\"\n    try:\n        await auth_service.register_user(user.email.lower(), user.password)\n        return {\"message\": f\"Confirmation email sent to address {user.email.lower()}.\"}\n    except asyncpg.UniqueViolationError:\n        print(f\"Email already registered: {user.email.lower()}\")\n        response.status_code = 400\n        return {\"message\": \"Email already registered.\"}\n    except Exception as e:\n        print(f\"Error during registration: {str(e)}\")\n        response.status_code = 500\n        return {\"error\": \"An error occurred during registration.\"}"
+  },
+  {
+    "file": "./App/python-server/controllers/auth_controller.py",
+    "type": "function",
+    "name": "controllers.auth_controller.login",
+    "docstring": "Authenticates a user and issues a JWT token as an HTTP-only cookie.\n\nVerifies the user's email and password. Checks if the user's email is verified.\nIf authentication is successful, sets a JWT token in a secure cookie.\nHandles incorrect credentials and unverified email cases.\n\nArgs:\n    user (User): The user login data (email and password).\n    response (Response): FastAPI response object for setting cookies and status codes.\n\nReturns:\n    dict: JSON message indicating the result of the login attempt.",
+    "start_line": 72,
+    "code": "async def login(user: User, response: Response):\n    \"\"\"\n    Authenticates a user and issues a JWT token as an HTTP-only cookie.\n\n    Verifies the user's email and password. Checks if the user's email is verified.\n    If authentication is successful, sets a JWT token in a secure cookie.\n    Handles incorrect credentials and unverified email cases.\n\n    Args:\n        user (User): The user login data (email and password).\n        response (Response): FastAPI response object for setting cookies and status codes.\n\n    Returns:\n        dict: JSON message indicating the result of the login attempt.\n    \"\"\"\n    db_user = await auth_service.authenticate_user(user.email.lower(), user.password)\n    if not db_user:\n        # SUGGESTION TO JUHO:\n        # dont't raise exceptions, just return set status code and return a message\n        # and we can handle it in the front\n        #raise HTTPException(status_code=401, detail=\"Incorrect email or password.\")\n        response.status_code = 401\n        return {\"message\": \"Incorrect email or password.\"}\n    \n    if not db_user[\"is_verified\"]:\n        print(f\"Email not verified: {user.email.lower()}\")\n        response.status_code = 401\n        return {\"message\": \"Email not verified.\"}\n\n    payload = {\"email\": db_user[\"email\"], \"role\": db_user[\"role\"]}\n    token = auth_service.create_access_token(payload)\n    response.set_cookie(key=COOKIE_KEY,\n                        value=token,\n                        httponly=True, samesite=\"lax\",\n                        path=\"/\",\n                        secure=False)\n                        #domain=\"80.221.17.169\")\n\n    return {\"message\": \"Welcome!\"}"
+  },
+  {
+    "file": "./App/python-server/controllers/auth_controller.py",
+    "type": "function",
+    "name": "controllers.auth_controller.logout",
+    "docstring": "Logs out the current user by deleting the authentication cookie.\n\nRemoves the JWT authentication cookie from the client to end the session.\n\nArgs:\n    response (Response): FastAPI response object for deleting cookies.\n\nReturns:\n    dict: JSON message confirming successful logout.",
+    "start_line": 114,
+    "code": "async def logout(response: Response):\n    \"\"\"\n    Logs out the current user by deleting the authentication cookie.\n\n    Removes the JWT authentication cookie from the client to end the session.\n\n    Args:\n        response (Response): FastAPI response object for deleting cookies.\n\n    Returns:\n        dict: JSON message confirming successful logout.\n    \"\"\"\n    response.delete_cookie(\n        key=COOKIE_KEY,\n        path=\"/\",\n        #domain=\"80.221.17.169\"\n    )\n    return {\"message\": \"User has successfully logged out\"}"
+  },
+  {
+    "file": "./App/python-server/controllers/auth_controller.py",
+    "type": "function",
+    "name": "controllers.auth_controller.verify",
+    "docstring": "Verifies a user's email address using a verification code.\n\nChecks the provided verification code against the stored code for the user.\nIf valid, marks the user's email as verified. Handles invalid or expired codes.\n\nArgs:\n    user_code (UserCode): The user's email and verification code.\n    response (Response): FastAPI response object for setting status codes.\n\nReturns:\n    dict: JSON message indicating the result of the verification attempt.",
+    "start_line": 134,
+    "code": "async def verify(user_code: UserCode, response: Response):\n    \"\"\"\n    Verifies a user's email address using a verification code.\n\n    Checks the provided verification code against the stored code for the user.\n    If valid, marks the user's email as verified. Handles invalid or expired codes.\n\n    Args:\n        user_code (UserCode): The user's email and verification code.\n        response (Response): FastAPI response object for setting status codes.\n\n    Returns:\n        dict: JSON message indicating the result of the verification attempt.\n    \"\"\"\n    try:\n        await auth_service.verify_user(user_code.email.lower(), user_code.code)\n        return {\"message\": \"Email verified successfully.\"}\n    except Exception as e:\n        print(f\"Error during verification: {str(e)}\")\n        response.status_code = 400\n        return {\"message\": \"Verification failed.\"}"
+  },
+  {
+    "file": "./App/python-server/controllers/auth_controller.py",
+    "type": "function",
+    "name": "controllers.auth_controller.resend_verification_code",
+    "docstring": "Resends a new email verification code to the user's email address.\n\nUsed when the user did not receive or lost the original verification code.\nHandles errors such as invalid email addresses.\n\nArgs:\n    request (EmailRequest): The user's email address.\n    response (Response): FastAPI response object for setting status codes.\n\nReturns:\n    dict: JSON message indicating whether the code was resent successfully.\n\nNOTE: email can raise fastapi_mail.errors.ConnectionErrors for SMTP connection issues,\n      or some other errors related to email sending.",
+    "start_line": 158,
+    "code": "async def resend_verification_code(request: EmailRequest, response: Response):\n    \"\"\"\n    Resends a new email verification code to the user's email address.\n\n    Used when the user did not receive or lost the original verification code.\n    Handles errors such as invalid email addresses.\n\n    Args:\n        request (EmailRequest): The user's email address.\n        response (Response): FastAPI response object for setting status codes.\n\n    Returns:\n        dict: JSON message indicating whether the code was resent successfully.\n\n    NOTE: email can raise fastapi_mail.errors.ConnectionErrors for SMTP connection issues,\n          or some other errors related to email sending.\n    \"\"\"\n    try:\n        await auth_service.update_verification_code(request.email.lower())\n        return {\"message\": \"Verification code resent successfully.\"}\n    except Exception as e:\n        print(f\"Error during resending verification code: {str(e)}\")\n        response.status_code = 400\n        return {\"message\": \"Failed to resend verification code.\"}"
+  },
+  {
+    "file": "./App/python-server/controllers/auth_controller.py",
+    "type": "function",
+    "name": "controllers.auth_controller.remove_user",
+    "docstring": "Removes a user record from the database.\n\nDeletes the user account associated with the provided email address.\nHandles errors such as non-existent users. First authenticates the user\nto ensure they have the right to delete the account.\n\nArgs:\n    user (User): The user data containing the email address.\n    response (Response): FastAPI response object for setting status codes.\n\nReturns:\n    dict: JSON message indicating whether the user was removed successfully.",
+    "start_line": 184,
+    "code": "async def remove_user(user: User, response: Response):\n    \"\"\"\n    Removes a user record from the database.\n\n    Deletes the user account associated with the provided email address.\n    Handles errors such as non-existent users. First authenticates the user\n    to ensure they have the right to delete the account.\n\n    Args:\n        user (User): The user data containing the email address.\n        response (Response): FastAPI response object for setting status codes.\n\n    Returns:\n        dict: JSON message indicating whether the user was removed successfully.\n    \"\"\"\n    db_user = await auth_service.authenticate_user(user.email.lower(), user.password)\n\n    if not db_user:\n        print(f\"Authentication failed for user: {user.email.lower()}\")\n        response.status_code = 401\n        return {\"message\": \"Authentication failed. Incorrect email or password.\"}\n\n    try:\n        await auth_service.remove_user(user.email.lower())\n        return {\"message\": \"User account removed successfully.\"}\n    except asyncpg.NoDataFoundError:\n        print(f\"Unable to remove user: {user.email.lower()}\")\n        response.status_code = 404\n        return {\"message\": \"User account was not removed -- contact site admin: eprice.varmennus@gmail.com.\"}"
+  },
+  {
+    "file": "./App/python-server/controllers/auth_controller.py",
+    "type": "function",
+    "name": "controllers.auth_controller.create_jwt_middleware",
+    "docstring": "Creates a FastAPI middleware for validating JWT tokens on protected routes.\n\nExtracts the JWT token from cookies, decodes and verifies it, and attaches\nthe user payload to the request state. Skips validation for public routes and\nhandles preflight (OPTIONS) requests. Returns a 401 error if the token is\nmissing or invalid.\n\nArgs:\n    public_routes (list): List of route paths that do not require authentication.\n\nReturns:\n    Callable: The JWT validation middleware function.",
+    "start_line": 215,
+    "code": "def create_jwt_middleware(public_routes):\n    \"\"\"\n    Creates a FastAPI middleware for validating JWT tokens on protected routes.\n\n    Extracts the JWT token from cookies, decodes and verifies it, and attaches\n    the user payload to the request state. Skips validation for public routes and\n    handles preflight (OPTIONS) requests. Returns a 401 error if the token is\n    missing or invalid.\n\n    Args:\n        public_routes (list): List of route paths that do not require authentication.\n\n    Returns:\n        Callable: The JWT validation middleware function.\n    \"\"\"\n    async def jwt_middleware(request: Request, call_next):\n        # Accept preflight requests\n        if request.method == \"OPTIONS\":\n            return await call_next(request)\n\n        # Skip validation for public routes\n        if request.url.path in public_routes:\n            return await call_next(request)\n\n        # Extract token from cookies\n        token = request.cookies.get(COOKIE_KEY)\n        if not token:\n            return JSONResponse(status_code=401, content={\"message\": \"No token found!\"})\n\n        # Validate the token\n        try:\n            payload = jwt.decode(token, JWT_SECRET, algorithms=[ALGORITHM])\n            request.state.user = payload\n        except JWTError:\n            return JSONResponse(status_code=401, content={\"message\": \"Invalid token!\"})\n\n        # Proceed to the next middleware or route handler\n        return await call_next(request)\n\n    return jwt_middleware"
+  },
+  {
+    "file": "./App/python-server/controllers/auth_controller.py",
+    "type": "function",
+    "name": "controllers.auth_controller.create_jwt_middleware.jwt_middleware",
+    "docstring": "",
+    "start_line": 230,
+    "code": "    async def jwt_middleware(request: Request, call_next):\n        # Accept preflight requests\n        if request.method == \"OPTIONS\":\n            return await call_next(request)\n\n        # Skip validation for public routes\n        if request.url.path in public_routes:\n            return await call_next(request)\n\n        # Extract token from cookies\n        token = request.cookies.get(COOKIE_KEY)\n        if not token:\n            return JSONResponse(status_code=401, content={\"message\": \"No token found!\"})\n\n        # Validate the token\n        try:\n            payload = jwt.decode(token, JWT_SECRET, algorithms=[ALGORITHM])\n            request.state.user = payload\n        except JWTError:\n            return JSONResponse(status_code=401, content={\"message\": \"Invalid token!\"})\n\n        # Proceed to the next middleware or route handler\n        return await call_next(request)"
+  },
+  {
+    "file": "./App/python-server/controllers/data_controller.py",
+    "type": "module",
+    "name": "__module__",
+    "docstring": "data_controller.py\n\nThis module defines the FastAPI routes for the Eprice backend service. It provides API endpoints for retrieving\nand querying electricity production, consumption, wind power, and price data. The endpoints fetch data from\nFingrid and Porssisähkö APIs, and return results as Pydantic models or error responses.\n\nRoutes:\n    - /api/windpower\n    - /api/windpower/range\n    - /api/consumption\n    - /api/consumption/range\n    - /api/production\n    - /api/production/range\n    - /api/price/range\n    - /api/public/data\n    - /api/data/today",
+    "start_line": 1,
+    "code": ""
+  },
+  {
+    "file": "./App/python-server/controllers/data_controller.py",
+    "type": "function",
+    "name": "controllers.data_controller.get_windpower",
+    "docstring": "Get wind power production forecast.\n\nFetches forecast data from Fingrid dataset ID 245.\n\nReturns:\n    FingridDataPoint | JSONResponse: A wind power data point or an error message.",
+    "start_line": 34,
+    "code": "async def get_windpower():\n    \"\"\"\n    Get wind power production forecast.\n\n    Fetches forecast data from Fingrid dataset ID 245.\n\n    Returns:\n        FingridDataPoint | JSONResponse: A wind power data point or an error message.\n    \"\"\"\n    try:\n        return await fingrid_data_service.fingrid_data(dataset_id=245)\n    except HTTPException as e:\n        return JSONResponse(status_code=e.status_code, content={\"error\": \"HTTPError\", \"message\": e.detail})\n    except Exception as e:\n        return JSONResponse({\"error\": \"InternalServerError\", \"message\": str(e)})"
+  },
+  {
+    "file": "./App/python-server/controllers/data_controller.py",
+    "type": "function",
+    "name": "controllers.data_controller.post_windpower_range",
+    "docstring": "Get wind power production data for a given time range.\n\nFetches data from Fingrid dataset ID 245.\n\nArgs:\n    time_range (TimeRangeRequest): Start and end time in RFC 3339 format.\n\nReturns:\n    List[FingridDataPoint] | JSONResponse: List of wind power data points or an error message.",
+    "start_line": 53,
+    "code": "async def post_windpower_range(time_range: TimeRangeRequest):\n    \"\"\"\n    Get wind power production data for a given time range.\n\n    Fetches data from Fingrid dataset ID 245.\n\n    Args:\n        time_range (TimeRangeRequest): Start and end time in RFC 3339 format.\n\n    Returns:\n        List[FingridDataPoint] | JSONResponse: List of wind power data points or an error message.\n    \"\"\"\n    try:\n        return await fingrid_data_service.fingrid_data_range(\n            dataset_id=245,\n            start_time=time_range.startTime,\n            end_time=time_range.endTime,\n)\n    except HTTPException as e:\n        return JSONResponse(status_code=e.status_code, content={\"error\": \"HTTPError\", \"message\": e.detail})\n    except Exception as e:\n        return JSONResponse({\"error\": \"InternalServerError\", \"message\": str(e)})"
+  },
+  {
+    "file": "./App/python-server/controllers/data_controller.py",
+    "type": "function",
+    "name": "controllers.data_controller.get_consumption",
+    "docstring": "Get electricity consumption forecast.\n\nFetches consumption data from Fingrid dataset ID 165.\n\nReturns:\n    FingridDataPoint | JSONResponse: A consumption data point or an error message.",
+    "start_line": 80,
+    "code": "async def get_consumption():\n    \"\"\"\n    Get electricity consumption forecast.\n\n    Fetches consumption data from Fingrid dataset ID 165.\n\n    Returns:\n        FingridDataPoint | JSONResponse: A consumption data point or an error message.\n    \"\"\"\n    try:\n        return await fingrid_data_service.fingrid_data(dataset_id=165)\n    except HTTPException as e:\n        return JSONResponse(status_code=e.status_code, content={\"error\": \"HTTPError\", \"message\": e.detail})\n    except Exception as e:\n        return JSONResponse({\"error\": \"InternalServerError\", \"message\": str(e)})"
+  },
+  {
+    "file": "./App/python-server/controllers/data_controller.py",
+    "type": "function",
+    "name": "controllers.data_controller.post_consumption_range",
+    "docstring": "Get electricity consumption data for a given time range.\n\nFetches consumption data from Fingrid dataset ID 165.\n\nArgs:\n    time_range (TimeRangeRequest): Start and end time in RFC 3339 format.\n\nReturns:\n    List[FingridDataPoint] | JSONResponse: List of consumption data points or an error message.",
+    "start_line": 99,
+    "code": "async def post_consumption_range(time_range: TimeRangeRequest):\n    \"\"\"\n    Get electricity consumption data for a given time range.\n\n    Fetches consumption data from Fingrid dataset ID 165.\n\n    Args:\n        time_range (TimeRangeRequest): Start and end time in RFC 3339 format.\n\n    Returns:\n        List[FingridDataPoint] | JSONResponse: List of consumption data points or an error message.\n    \"\"\"\n    try:\n        return await fingrid_data_service.fingrid_data_range(\n            dataset_id=165,\n            start_time=time_range.startTime,\n            end_time=time_range.endTime\n        )\n    except HTTPException as e:\n        return JSONResponse(status_code=e.status_code, content={\"error\": \"HTTPError\", \"message\": e.detail})\n    except Exception as e:\n        return JSONResponse({\"error\": \"InternalServerError\", \"message\": str(e)})"
+  },
+  {
+    "file": "./App/python-server/controllers/data_controller.py",
+    "type": "function",
+    "name": "controllers.data_controller.get_production",
+    "docstring": "Get electricity production forecast.\n\nFetches production data from Fingrid dataset ID 241.\n\nReturns:\n    FingridDataPoint | JSONResponse: A production data point or an error message.",
+    "start_line": 126,
+    "code": "async def get_production():\n    \"\"\"\n    Get electricity production forecast.\n\n    Fetches production data from Fingrid dataset ID 241.\n\n    Returns:\n        FingridDataPoint | JSONResponse: A production data point or an error message.\n    \"\"\"\n    try:\n        return await fingrid_data_service.fingrid_data(dataset_id=241)\n    except HTTPException as e:\n        return JSONResponse(status_code=e.status_code, content={\"error\": \"HTTPError\", \"message\": e.detail})\n    except Exception as e:\n        return JSONResponse({\"error\": \"InternalServerError\", \"message\": str(e)})"
+  },
+  {
+    "file": "./App/python-server/controllers/data_controller.py",
+    "type": "function",
+    "name": "controllers.data_controller.post_production_range",
+    "docstring": "Get electricity production data for a given time range.\n\nFetches production data from Fingrid dataset ID 241.\n\nArgs:\n    time_range (TimeRangeRequest): Start and end time in RFC 3339 format.\n\nReturns:\n    List[FingridDataPoint] | JSONResponse: List of production data points or an error message.",
+    "start_line": 145,
+    "code": "async def post_production_range(time_range: TimeRangeRequest):\n    \"\"\"\n    Get electricity production data for a given time range.\n\n    Fetches production data from Fingrid dataset ID 241.\n\n    Args:\n        time_range (TimeRangeRequest): Start and end time in RFC 3339 format.\n\n    Returns:\n        List[FingridDataPoint] | JSONResponse: List of production data points or an error message.\n    \"\"\"\n    try:\n        return await fingrid_data_service.fingrid_data_range(\n            dataset_id=241,\n            start_time=time_range.startTime,\n            end_time=time_range.endTime\n        )\n    except HTTPException as e:\n        return JSONResponse(status_code=e.status_code, content={\"error\": \"HTTPError\", \"message\": e.detail})\n    except Exception as e:\n        return JSONResponse({\"error\": \"InternalServerError\", \"message\": str(e)})"
+  },
+  {
+    "file": "./App/python-server/controllers/data_controller.py",
+    "type": "function",
+    "name": "controllers.data_controller.post_price_range",
+    "docstring": "Get price data for a specific time range from the Porssisahko API.\n\nArgs:\n    time_range (TimeRangeRequest): Start and end time as datetime objects.\n\nReturns:\n    List[PriceDataPoint] | JSONResponse: List of price data points or an error message.",
+    "start_line": 170,
+    "code": "async def post_price_range(time_range: TimeRangeRequest):\n    \"\"\"\n    Get price data for a specific time range from the Porssisahko API.\n\n    Args:\n        time_range (TimeRangeRequest): Start and end time as datetime objects.\n\n    Returns:\n        List[PriceDataPoint] | JSONResponse: List of price data points or an error message.\n    \"\"\"\n    try:\n        return await price_data_service.price_data_range(\n            time_range.startTime, time_range.endTime\n        )\n    except HTTPException as e:\n        return JSONResponse(status_code=e.status_code, content={\"error\": \"HTTPError\", \"message\": e.detail})\n    except Exception as e:\n        print(e)\n        return JSONResponse({\"error\":\"InternalServerError\", \"message\": str(e)})"
+  },
+  {
+    "file": "./App/python-server/controllers/data_controller.py",
+    "type": "function",
+    "name": "controllers.data_controller.get_prices",
+    "docstring": "Retrieve the latest 48 hours of electricity price data.\n\nReturns:\n    List[PriceDataPoint] | JSONResponse: List of the latest price data points or an error message.",
+    "start_line": 196,
+    "code": "async def get_prices():\n    \"\"\"\n    Retrieve the latest 48 hours of electricity price data.\n\n    Returns:\n        List[PriceDataPoint] | JSONResponse: List of the latest price data points or an error message.\n    \"\"\"\n    try:\n        return await price_data_service.price_data_latest()\n    except HTTPException as e:\n        return JSONResponse(status_code=e.status_code, content={\"error\": \"HTTPError\", \"message\": e.detail})\n    except Exception as e:\n        return JSONResponse({\"error\": \"InternalServerError\", \"message\": str(e)})"
+  },
+  {
+    "file": "./App/python-server/controllers/data_controller.py",
+    "type": "function",
+    "name": "controllers.data_controller.get_prices_today",
+    "docstring": "Retrieve today's electricity price data for Finland (Europe/Helsinki).\n\nReturns:\n    List[PriceDataPoint] | JSONResponse: List of today's price data points or an error message.",
+    "start_line": 215,
+    "code": "async def get_prices_today():\n    \"\"\"\n    Retrieve today's electricity price data for Finland (Europe/Helsinki).\n\n    Returns:\n        List[PriceDataPoint] | JSONResponse: List of today's price data points or an error message.\n    \"\"\"\n    try:\n        return await price_data_service.price_data_today()\n    except HTTPException as e:\n        return JSONResponse(status_code=e.status_code, content={\"error\": \"HTTPError\", \"message\": e.detail})\n    except Exception as e:\n        return JSONResponse({\"error\": \"InternalServerError\", \"message\": str(e)})"
+  },
+  {
+    "file": "./App/python-server/controllers/data_controller.py",
+    "type": "function",
+    "name": "controllers.data_controller.post_price_hourly_avg",
+    "docstring": "Get hourly average price data for a specific time range.\n\nArgs:\n    time_range (TimeRangeRequest): Start and end time as datetime objects.\n\nReturns:\n    List[PriceDataPoint] | JSONResponse: List of hourly average price data points or an error message. Hour is in Zulu time.",
+    "start_line": 230,
+    "code": "async def post_price_hourly_avg(time_range: TimeRangeRequest):\n    \"\"\"\n    Get hourly average price data for a specific time range.\n\n    Args:\n        time_range (TimeRangeRequest): Start and end time as datetime objects.\n\n    Returns:\n        List[PriceDataPoint] | JSONResponse: List of hourly average price data points or an error message. Hour is in Zulu time.\n    \"\"\"\n    try:\n        return await price_data_service.price_data_hourly_avg(time_range)\n    except HTTPException as e:\n        return JSONResponse(status_code=e.status_code, content={\"error\": \"HTTPError\", \"message\": e.detail})\n    except Exception as e:\n        return JSONResponse({\"error\": \"InternalServerError\", \"message\": str(e)})"
+  },
+  {
+    "file": "./App/python-server/controllers/data_controller.py",
+    "type": "function",
+    "name": "controllers.data_controller.post_price_weekday_avg",
+    "docstring": "Get average price data grouped by weekday for a specific time range.\n\nArgs:\n    time_range (TimeRangeRequest): Start and end time as datetime objects.\n\nReturns:\n    List[AveragePriceByWeekday] | JSONResponse: List of average price data points by weekday or an error message.",
+    "start_line": 248,
+    "code": "async def post_price_weekday_avg(time_range: TimeRangeRequest):\n    \"\"\"\n    Get average price data grouped by weekday for a specific time range.\n\n    Args:\n        time_range (TimeRangeRequest): Start and end time as datetime objects.\n\n    Returns:\n        List[AveragePriceByWeekday] | JSONResponse: List of average price data points by weekday or an error message.\n    \"\"\"\n    try:\n        return await price_data_service.price_data_avg_by_weekday(time_range, timezone_hki=False)\n    except HTTPException as e:\n        return JSONResponse(status_code=e.status_code, content={\"error\": \"HTTPError\", \"message\": e.detail})\n    except Exception as e:\n        return JSONResponse({\"error\": \"InternalServerError\", \"message\": str(e)})"
+  },
+  {
+    "file": "./App/python-server/controllers/data_controller.py",
+    "type": "function",
+    "name": "controllers.data_controller.post_price_weekday_avg_hki",
+    "docstring": "Get average price data grouped by weekday for a specific time range.\n\nArgs:\n    time_range (TimeRangeRequest): Start and end time as datetime objects.\n\nReturns:\n    List[AveragePriceByWeekday] | JSONResponse: List of average price data points by weekday or an error message.",
+    "start_line": 266,
+    "code": "async def post_price_weekday_avg_hki(time_range: TimeRangeRequest):\n    \"\"\"\n    Get average price data grouped by weekday for a specific time range.\n\n    Args:\n        time_range (TimeRangeRequest): Start and end time as datetime objects.\n\n    Returns:\n        List[AveragePriceByWeekday] | JSONResponse: List of average price data points by weekday or an error message.\n    \"\"\"\n    try:\n        return await price_data_service.price_data_avg_by_weekday(time_range, timezone_hki=True)\n    except HTTPException as e:\n        return JSONResponse(status_code=e.status_code, content={\"error\": \"HTTPError\", \"message\": e.detail})\n    except Exception as e:\n        return JSONResponse({\"error\": \"InternalServerError\", \"message\": str(e)})"
+  },
+  {
+    "file": "./App/python-server/services/auth_service.py",
+    "type": "module",
+    "name": "__module__",
+    "docstring": "auth_service.py defines AuthService, which provides authentication and user management logic for the Eprice backend.\n\nThis service handles password hashing and verification, JWT token creation, user authentication,\nregistration, email verification, and verification code management. It interacts with the user\nrepository for database operations and with email utilities for sending verification codes.\n\nKey Responsibilities:\n- Securely hash and verify user passwords using bcrypt.\n- Generate and validate JWT access tokens for authenticated sessions.\n- Register new users, including generating and emailing verification codes.\n- Authenticate users by verifying credentials.\n- Verify user email addresses using codes sent via email.\n- Regenerate and resend verification codes as needed.\n\nDependencies:\n- passlib for password hashing.\n- jose for JWT encoding.\n- async database repository for user data.\n- email utilities for sending verification codes.\n\nIntended Usage:\n- Instantiated with a UserRepository instance.\n- Used by FastAPI controllers to perform authentication-related operations.",
+    "start_line": 1,
+    "code": ""
+  },
+  {
+    "file": "./App/python-server/services/auth_service.py",
+    "type": "class",
+    "name": "services.auth_service.AuthService",
+    "docstring": "Service class for authentication and user management logic in the Eprice backend.\n\nHandles password hashing and verification, JWT token creation, user authentication,\nregistration, email verification, and verification code management. Interacts with the\nuser repository for database operations and with email utilities for sending verification codes.\n\nArgs:\n    user_repository (UserRepository): The repository instance for user database operations.",
+    "start_line": 36,
+    "code": "class AuthService:\n    \"\"\"\n    Service class for authentication and user management logic in the Eprice backend.\n\n    Handles password hashing and verification, JWT token creation, user authentication,\n    registration, email verification, and verification code management. Interacts with the\n    user repository for database operations and with email utilities for sending verification codes.\n\n    Args:\n        user_repository (UserRepository): The repository instance for user database operations.\n    \"\"\"\n    def __init__(self, user_repository: UserRepository):\n        \"\"\"\n        Initialize the AuthService with a user repository.\n\n        Args:\n            user_repository (UserRepository): The repository instance for user database operations.\n        \"\"\"\n        self.user_repository = user_repository\n        self.pwd_context = CryptContext(schemes=[\"bcrypt\"], deprecated=\"auto\")\n\n    def get_password_hash(self, password: str) -> str:\n        \"\"\"\n        Hash a plaintext password using bcrypt.\n\n        Args:\n            password (str): The plaintext password.\n\n        Returns:\n            str: The hashed password.\n        \"\"\"\n        return self.pwd_context.hash(password)\n    \n    def generate_verification_code(self):\n        \"\"\"\n        Generate a random verification code in the format ABC-123.\n\n        Returns:\n            str: The generated verification code.\n        \"\"\"\n        letters = ''.join(random.choices(string.ascii_uppercase, k=3))\n        digits = ''.join(random.choices(string.digits, k=3))\n        return f\"{letters}-{digits}\"\n\n    def verify_password(self, plain_password: str, hashed_password: str) -> bool:\n        \"\"\"\n        Verify a plaintext password against a hashed password.\n\n        Args:\n            plain_password (str): The plaintext password.\n            hashed_password (str): The hashed password.\n\n        Returns:\n            bool: True if the password matches, False otherwise.\n        \"\"\"\n        return self.pwd_context.verify(plain_password, hashed_password)\n\n    def create_access_token(self, data: dict, expires_delta: timedelta = None):\n        \"\"\"\n        Create a JWT access token for the given data.\n\n        Args:\n            data (dict): The payload data to encode in the token.\n            expires_delta (timedelta, optional): Token expiration time. Defaults to configured value.\n\n        Returns:\n            str: The encoded JWT token.\n        \"\"\"\n        to_encode = data.copy()\n        expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))\n        to_encode.update({\"exp\": expire})\n        return jwt.encode(to_encode, JWT_SECRET, algorithm=ALGORITHM)\n\n    async def authenticate_user(self, email: str, password: str):\n        \"\"\"\n        Authenticate a user by email and password.\n\n        Args:\n            email (str): The user's email address.\n            password (str): The user's plaintext password.\n\n        Returns:\n            dict or None: The user record if authentication succeeds, None otherwise.\n        \"\"\"\n        user = await self.user_repository.get_user_by_email(email)\n        if not user or not self.verify_password(password, user[\"password_hash\"]):\n            return None\n        return user\n\n    async def register_user(self, email: str, password: str):\n        \"\"\"\n        Register a new user and send a verification code via email.\n\n        Args:\n            email (str): The user's email address.\n            password (str): The user's plaintext password.\n\n        Raises:\n            Exception: If user creation fails.\n        \"\"\"\n        hashed_password = self.get_password_hash(password)\n        code = self.generate_verification_code()\n        \n        await self.user_repository.create_user(email, hashed_password, code)\n        # Only send email if user creation succeeded\n        await send_email_async(email, code)\n\n    async def verify_user(self, email: str, code: str):\n        \"\"\"\n        Verify a user's email address using a verification code.\n\n        Args:\n            email (str): The user's email address.\n            code (str): The verification code.\n\n        Raises:\n            Exception: If verification fails.\n        \"\"\"\n        result = await self.user_repository.verify_code(email, code)\n        if not result:\n            raise Exception(\"Verification failed\")\n        \n    async def update_verification_code(self, email: str):\n        \"\"\"\n        Generate and update a new verification code for the user, and send it via email.\n\n        Args:\n            email (str): The user's email address.\n\n        Raises:\n            Exception: If updating the code fails.\n        \"\"\"\n        new_code = self.generate_verification_code()\n        await self.user_repository.update_code(email, new_code)\n        # Only send email if update succeeded\n        await send_email_async(email, new_code)\n        \n    async def remove_user(self, email: str):\n        \"\"\"\n        Remove a user from the database.\n\n        Args:\n            email (str): The user's email address.\n\n        Raises:\n            Exception: If user removal fails.\n        \"\"\"\n        await self.user_repository.delete_user(email)"
+  },
+  {
+    "file": "./App/python-server/services/auth_service.py",
+    "type": "function",
+    "name": "services.auth_service.AuthService.__init__",
+    "docstring": "Initialize the AuthService with a user repository.\n\nArgs:\n    user_repository (UserRepository): The repository instance for user database operations.",
+    "start_line": 47,
+    "code": "    def __init__(self, user_repository: UserRepository):\n        \"\"\"\n        Initialize the AuthService with a user repository.\n\n        Args:\n            user_repository (UserRepository): The repository instance for user database operations.\n        \"\"\"\n        self.user_repository = user_repository\n        self.pwd_context = CryptContext(schemes=[\"bcrypt\"], deprecated=\"auto\")"
+  },
+  {
+    "file": "./App/python-server/services/auth_service.py",
+    "type": "function",
+    "name": "services.auth_service.AuthService.get_password_hash",
+    "docstring": "Hash a plaintext password using bcrypt.\n\nArgs:\n    password (str): The plaintext password.\n\nReturns:\n    str: The hashed password.",
+    "start_line": 57,
+    "code": "    def get_password_hash(self, password: str) -> str:\n        \"\"\"\n        Hash a plaintext password using bcrypt.\n\n        Args:\n            password (str): The plaintext password.\n\n        Returns:\n            str: The hashed password.\n        \"\"\"\n        return self.pwd_context.hash(password)"
+  },
+  {
+    "file": "./App/python-server/services/auth_service.py",
+    "type": "function",
+    "name": "services.auth_service.AuthService.generate_verification_code",
+    "docstring": "Generate a random verification code in the format ABC-123.\n\nReturns:\n    str: The generated verification code.",
+    "start_line": 69,
+    "code": "    def generate_verification_code(self):\n        \"\"\"\n        Generate a random verification code in the format ABC-123.\n\n        Returns:\n            str: The generated verification code.\n        \"\"\"\n        letters = ''.join(random.choices(string.ascii_uppercase, k=3))\n        digits = ''.join(random.choices(string.digits, k=3))\n        return f\"{letters}-{digits}\""
+  },
+  {
+    "file": "./App/python-server/services/auth_service.py",
+    "type": "function",
+    "name": "services.auth_service.AuthService.verify_password",
+    "docstring": "Verify a plaintext password against a hashed password.\n\nArgs:\n    plain_password (str): The plaintext password.\n    hashed_password (str): The hashed password.\n\nReturns:\n    bool: True if the password matches, False otherwise.",
+    "start_line": 80,
+    "code": "    def verify_password(self, plain_password: str, hashed_password: str) -> bool:\n        \"\"\"\n        Verify a plaintext password against a hashed password.\n\n        Args:\n            plain_password (str): The plaintext password.\n            hashed_password (str): The hashed password.\n\n        Returns:\n            bool: True if the password matches, False otherwise.\n        \"\"\"\n        return self.pwd_context.verify(plain_password, hashed_password)"
+  },
+  {
+    "file": "./App/python-server/services/auth_service.py",
+    "type": "function",
+    "name": "services.auth_service.AuthService.create_access_token",
+    "docstring": "Create a JWT access token for the given data.\n\nArgs:\n    data (dict): The payload data to encode in the token.\n    expires_delta (timedelta, optional): Token expiration time. Defaults to configured value.\n\nReturns:\n    str: The encoded JWT token.",
+    "start_line": 93,
+    "code": "    def create_access_token(self, data: dict, expires_delta: timedelta = None):\n        \"\"\"\n        Create a JWT access token for the given data.\n\n        Args:\n            data (dict): The payload data to encode in the token.\n            expires_delta (timedelta, optional): Token expiration time. Defaults to configured value.\n\n        Returns:\n            str: The encoded JWT token.\n        \"\"\"\n        to_encode = data.copy()\n        expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))\n        to_encode.update({\"exp\": expire})\n        return jwt.encode(to_encode, JWT_SECRET, algorithm=ALGORITHM)"
+  },
+  {
+    "file": "./App/python-server/services/auth_service.py",
+    "type": "function",
+    "name": "services.auth_service.AuthService.authenticate_user",
+    "docstring": "Authenticate a user by email and password.\n\nArgs:\n    email (str): The user's email address.\n    password (str): The user's plaintext password.\n\nReturns:\n    dict or None: The user record if authentication succeeds, None otherwise.",
+    "start_line": 109,
+    "code": "    async def authenticate_user(self, email: str, password: str):\n        \"\"\"\n        Authenticate a user by email and password.\n\n        Args:\n            email (str): The user's email address.\n            password (str): The user's plaintext password.\n\n        Returns:\n            dict or None: The user record if authentication succeeds, None otherwise.\n        \"\"\"\n        user = await self.user_repository.get_user_by_email(email)\n        if not user or not self.verify_password(password, user[\"password_hash\"]):\n            return None\n        return user"
+  },
+  {
+    "file": "./App/python-server/services/auth_service.py",
+    "type": "function",
+    "name": "services.auth_service.AuthService.register_user",
+    "docstring": "Register a new user and send a verification code via email.\n\nArgs:\n    email (str): The user's email address.\n    password (str): The user's plaintext password.\n\nRaises:\n    Exception: If user creation fails.",
+    "start_line": 125,
+    "code": "    async def register_user(self, email: str, password: str):\n        \"\"\"\n        Register a new user and send a verification code via email.\n\n        Args:\n            email (str): The user's email address.\n            password (str): The user's plaintext password.\n\n        Raises:\n            Exception: If user creation fails.\n        \"\"\"\n        hashed_password = self.get_password_hash(password)\n        code = self.generate_verification_code()\n        \n        await self.user_repository.create_user(email, hashed_password, code)\n        # Only send email if user creation succeeded\n        await send_email_async(email, code)"
+  },
+  {
+    "file": "./App/python-server/services/auth_service.py",
+    "type": "function",
+    "name": "services.auth_service.AuthService.verify_user",
+    "docstring": "Verify a user's email address using a verification code.\n\nArgs:\n    email (str): The user's email address.\n    code (str): The verification code.\n\nRaises:\n    Exception: If verification fails.",
+    "start_line": 143,
+    "code": "    async def verify_user(self, email: str, code: str):\n        \"\"\"\n        Verify a user's email address using a verification code.\n\n        Args:\n            email (str): The user's email address.\n            code (str): The verification code.\n\n        Raises:\n            Exception: If verification fails.\n        \"\"\"\n        result = await self.user_repository.verify_code(email, code)\n        if not result:\n            raise Exception(\"Verification failed\")"
+  },
+  {
+    "file": "./App/python-server/services/auth_service.py",
+    "type": "function",
+    "name": "services.auth_service.AuthService.update_verification_code",
+    "docstring": "Generate and update a new verification code for the user, and send it via email.\n\nArgs:\n    email (str): The user's email address.\n\nRaises:\n    Exception: If updating the code fails.",
+    "start_line": 158,
+    "code": "    async def update_verification_code(self, email: str):\n        \"\"\"\n        Generate and update a new verification code for the user, and send it via email.\n\n        Args:\n            email (str): The user's email address.\n\n        Raises:\n            Exception: If updating the code fails.\n        \"\"\"\n        new_code = self.generate_verification_code()\n        await self.user_repository.update_code(email, new_code)\n        # Only send email if update succeeded\n        await send_email_async(email, new_code)"
+  },
+  {
+    "file": "./App/python-server/services/auth_service.py",
+    "type": "function",
+    "name": "services.auth_service.AuthService.remove_user",
+    "docstring": "Remove a user from the database.\n\nArgs:\n    email (str): The user's email address.\n\nRaises:\n    Exception: If user removal fails.",
+    "start_line": 173,
+    "code": "    async def remove_user(self, email: str):\n        \"\"\"\n        Remove a user from the database.\n\n        Args:\n            email (str): The user's email address.\n\n        Raises:\n            Exception: If user removal fails.\n        \"\"\"\n        await self.user_repository.delete_user(email)"
+  },
+  {
+    "file": "./App/python-server/services/data_service.py",
+    "type": "module",
+    "name": "__module__",
+    "docstring": "data_service.py\n\nThis module provides service classes for handling data operations in the Eprice backend.\nIt includes services for fetching and processing Fingrid electricity data and price data,\ncombining information from external APIs and the database, and providing unified access\nto the application's core data models.",
+    "start_line": 1,
+    "code": ""
+  },
+  {
+    "file": "./App/python-server/services/data_service.py",
+    "type": "class",
+    "name": "services.data_service.FingridDataService",
+    "docstring": "Service class for fetching Fingrid data from the external API.",
+    "start_line": 18,
+    "code": "class FingridDataService:\n    \"\"\"\n    Service class for fetching Fingrid data from the external API.\n    \"\"\"\n\n    def __init__(self):\n        \"\"\"\n        Initialize the FingridDataService with the external API fetcher.\n        \"\"\"\n        self.ext_api_fetcher = FetchFingridData()\n\n    async def fingrid_data(self, dataset_id: int) -> FingridDataPoint:\n        \"\"\"\n        Fetch the latest Fingrid data for a given dataset ID.\n\n        Args:\n            dataset_id (int): The Fingrid dataset ID.\n\n        Returns:\n            FingridDataPoint: The latest data point.\n        \n        Raises:\n            HTTPException: If the API call fails or no data is available.\n        \"\"\"\n        return await self.ext_api_fetcher.fetch_fingrid_data(dataset_id)\n    \n    async def fingrid_data_range(self, dataset_id: int, start_time: datetime, end_time: datetime) -> List[FingridDataPoint]:\n        \"\"\"\n        Fetch Fingrid data for a given dataset ID and time range.\n\n        Args:\n            dataset_id (int): The Fingrid dataset ID.\n            start_time (datetime): Start time in UTC.\n            end_time (datetime): End time in UTC.\n\n        Returns:\n            List[FingridDataPoint]: List of data points for the given range.\n\n        Raises:\n            HTTPException: If the API call fails or no data is available.\n        \"\"\"\n        return await self.ext_api_fetcher.fetch_fingrid_data_range(dataset_id, start_time, end_time)"
+  },
+  {
+    "file": "./App/python-server/services/data_service.py",
+    "type": "class",
+    "name": "services.data_service.PriceDataService",
+    "docstring": "Service class for handling price data operations, including fetching from the database and external API.",
+    "start_line": 62,
+    "code": "class PriceDataService:\n    \"\"\"\n    Service class for handling price data operations, including fetching from the database and external API.\n    \"\"\"\n\n    def __init__(self):\n        \"\"\"\n        Initialize the PriceDataService with required repositories and helper services.\n        \"\"\"\n        self.ext_api_fetcher = FetchPriceData()\n        self.database_fetcher = PorssisahkoRepository(DATABASE_URL)\n        self.porssisahko_service_tools = PorssisahkoServiceTools(self.ext_api_fetcher, self.database_fetcher)\n\n    async def price_data_latest(self) -> List[PriceDataPoint]:\n        \"\"\"\n        Fetch the latest 48 hours of price data, preferring the database but falling back to the external API if needed.\n\n        Returns:\n            List[PriceDataPoint]: List of price data points for the latest 48 hours.\n\n        Raises:\n            HTTPException: If the API call fails or no data is available.\n        \"\"\"\n        start_date, end_date = self.porssisahko_service_tools.expected_time_range()\n        try:\n            result = await self.porssisahko_service_tools.fetch_and_process_data(start_date, end_date)\n            return result if result else await self.ext_api_fetcher.fetch_price_data_latest()\n        except Exception:\n            return await self.ext_api_fetcher.fetch_price_data_latest()\n\n    async def price_data_range(self, start_date: datetime, end_date: datetime) -> List[PriceDataPoint]:\n        \"\"\"\n        Fetch price data for a given time range, preferring the database but falling back to the external API if needed.\n\n        Args:\n            start_date (datetime): Start of the time range.\n            end_date (datetime): End of the time range.\n\n        Returns:\n            List[PriceDataPoint]: List of price data points for the given range.\n\n        Raises:\n            HTTPException: If the API call fails or no data is available.\n        \"\"\"\n\n\n        # Laske Helsingin ja UTC:n aikaero tunteina\n        helsinki_offset = datetime.now(ZoneInfo(\"Europe/Helsinki\")).utcoffset()\n        utc_offset = datetime.now(ZoneInfo(\"UTC\")).utcoffset()\n        if helsinki_offset is not None and utc_offset is not None:\n            hours_difference = int((helsinki_offset - utc_offset).total_seconds() // 3600)\n        else:\n            hours_difference = 0  # fallback if offsets are None\n\n        start_date = start_date.replace(tzinfo=None) + timedelta(hours=hours_difference)\n        end_date = end_date.replace(tzinfo=None) + timedelta(hours=hours_difference)\n        try:\n            result = await self.porssisahko_service_tools.fetch_and_process_data(start_date, end_date)\n            return result if result else await self.ext_api_fetcher.fetch_price_data_range(start_date, end_date)\n        except Exception:\n            return await self.ext_api_fetcher.fetch_price_data_range(start_date, end_date)\n\n    async def price_data_today(self) -> List[PriceDataPoint]:\n        \"\"\"\n        Fetch price data for the current day in Helsinki time.\n\n        Returns:\n            List[PriceDataPoint]: List of today's price data points.\n\n        Raises:\n            HTTPException: If the API call fails or no data is available.\n        \"\"\"\n        data = await self.price_data_latest()\n        if data:\n            now_fi = datetime.now(ZoneInfo(\"Europe/Helsinki\"))\n            today_fi = now_fi.date()\n            filtered_data = [item for item in data if item.startDate.astimezone(ZoneInfo(\"Europe/Helsinki\")).date() == today_fi]\n            return sorted(filtered_data, key=lambda x: x.startDate, reverse=False)\n        else:\n            return await self.ext_api_fetcher.fetch_price_data_today()\n\n    async def price_data_hourly_avg(self, time_range):\n        \"\"\"\n        Fetch hourly average price data for a given time range.\n\n        Args:\n            time_range (TimeRangeRequest): Start and end time as datetime objects.\n\n        Returns:\n            List[PriceHourlyAvgPricePoint]: List of hourly average price points.\n\n        Raises:\n            HTTPException: If the API call fails or no data is available.\n        \"\"\"\n        data = await self.price_data_range(\n            time_range.startTime.replace(tzinfo=None),\n            time_range.endTime.replace(tzinfo=None)\n        )\n        return self.porssisahko_service_tools.calculate_hourly_avg_price(data)\n    \n\n    \n    async def price_data_avg_by_weekday(self, time_range: TimeRangeRequest, timezone_hki=False) -> List[PriceAvgByWeekdayPoint]:\n        \"\"\"\n        Calculate average price by weekday for a given time range.\n\n        Args:\n            time_range (TimeRangeRequest): Start and end time as datetime objects.\n\n        Returns:\n            List[PriceAvgByWeekdayPoint]: List of average prices by weekday.\n        \"\"\"\n        data = await self.price_data_range(\n            time_range.startTime.replace(tzinfo=None),\n            time_range.endTime.replace(tzinfo=None)\n        )\n        \n        return self.porssisahko_service_tools.calculate_avg_by_weekday(data, timezone_hki=timezone_hki)"
+  },
+  {
+    "file": "./App/python-server/services/data_service.py",
+    "type": "function",
+    "name": "services.data_service.PriceDataService.__init__",
+    "docstring": "Initialize the FingridDataService with the external API fetcher.",
+    "start_line": 23,
+    "code": "    def __init__(self):\n        \"\"\"\n        Initialize the FingridDataService with the external API fetcher.\n        \"\"\"\n        self.ext_api_fetcher = FetchFingridData()"
+  },
+  {
+    "file": "./App/python-server/services/data_service.py",
+    "type": "function",
+    "name": "services.data_service.FingridDataService.fingrid_data",
+    "docstring": "Fetch the latest Fingrid data for a given dataset ID.\n\nArgs:\n    dataset_id (int): The Fingrid dataset ID.\n\nReturns:\n    FingridDataPoint: The latest data point.\n\nRaises:\n    HTTPException: If the API call fails or no data is available.",
+    "start_line": 29,
+    "code": "    async def fingrid_data(self, dataset_id: int) -> FingridDataPoint:\n        \"\"\"\n        Fetch the latest Fingrid data for a given dataset ID.\n\n        Args:\n            dataset_id (int): The Fingrid dataset ID.\n\n        Returns:\n            FingridDataPoint: The latest data point.\n        \n        Raises:\n            HTTPException: If the API call fails or no data is available.\n        \"\"\"\n        return await self.ext_api_fetcher.fetch_fingrid_data(dataset_id)"
+  },
+  {
+    "file": "./App/python-server/services/data_service.py",
+    "type": "function",
+    "name": "services.data_service.FingridDataService.fingrid_data_range",
+    "docstring": "Fetch Fingrid data for a given dataset ID and time range.\n\nArgs:\n    dataset_id (int): The Fingrid dataset ID.\n    start_time (datetime): Start time in UTC.\n    end_time (datetime): End time in UTC.\n\nReturns:\n    List[FingridDataPoint]: List of data points for the given range.\n\nRaises:\n    HTTPException: If the API call fails or no data is available.",
+    "start_line": 44,
+    "code": "    async def fingrid_data_range(self, dataset_id: int, start_time: datetime, end_time: datetime) -> List[FingridDataPoint]:\n        \"\"\"\n        Fetch Fingrid data for a given dataset ID and time range.\n\n        Args:\n            dataset_id (int): The Fingrid dataset ID.\n            start_time (datetime): Start time in UTC.\n            end_time (datetime): End time in UTC.\n\n        Returns:\n            List[FingridDataPoint]: List of data points for the given range.\n\n        Raises:\n            HTTPException: If the API call fails or no data is available.\n        \"\"\"\n        return await self.ext_api_fetcher.fetch_fingrid_data_range(dataset_id, start_time, end_time)"
+  },
+  {
+    "file": "./App/python-server/services/data_service.py",
+    "type": "function",
+    "name": "services.data_service.PriceDataService.__init__",
+    "docstring": "Initialize the PriceDataService with required repositories and helper services.",
+    "start_line": 67,
+    "code": "    def __init__(self):\n        \"\"\"\n        Initialize the PriceDataService with required repositories and helper services.\n        \"\"\"\n        self.ext_api_fetcher = FetchPriceData()\n        self.database_fetcher = PorssisahkoRepository(DATABASE_URL)\n        self.porssisahko_service_tools = PorssisahkoServiceTools(self.ext_api_fetcher, self.database_fetcher)"
+  },
+  {
+    "file": "./App/python-server/services/data_service.py",
+    "type": "function",
+    "name": "services.data_service.PriceDataService.price_data_latest",
+    "docstring": "Fetch the latest 48 hours of price data, preferring the database but falling back to the external API if needed.\n\nReturns:\n    List[PriceDataPoint]: List of price data points for the latest 48 hours.\n\nRaises:\n    HTTPException: If the API call fails or no data is available.",
+    "start_line": 75,
+    "code": "    async def price_data_latest(self) -> List[PriceDataPoint]:\n        \"\"\"\n        Fetch the latest 48 hours of price data, preferring the database but falling back to the external API if needed.\n\n        Returns:\n            List[PriceDataPoint]: List of price data points for the latest 48 hours.\n\n        Raises:\n            HTTPException: If the API call fails or no data is available.\n        \"\"\"\n        start_date, end_date = self.porssisahko_service_tools.expected_time_range()\n        try:\n            result = await self.porssisahko_service_tools.fetch_and_process_data(start_date, end_date)\n            return result if result else await self.ext_api_fetcher.fetch_price_data_latest()\n        except Exception:\n            return await self.ext_api_fetcher.fetch_price_data_latest()"
+  },
+  {
+    "file": "./App/python-server/services/data_service.py",
+    "type": "function",
+    "name": "services.data_service.PriceDataService.price_data_range",
+    "docstring": "Fetch price data for a given time range, preferring the database but falling back to the external API if needed.\n\nArgs:\n    start_date (datetime): Start of the time range.\n    end_date (datetime): End of the time range.\n\nReturns:\n    List[PriceDataPoint]: List of price data points for the given range.\n\nRaises:\n    HTTPException: If the API call fails or no data is available.",
+    "start_line": 92,
+    "code": "    async def price_data_range(self, start_date: datetime, end_date: datetime) -> List[PriceDataPoint]:\n        \"\"\"\n        Fetch price data for a given time range, preferring the database but falling back to the external API if needed.\n\n        Args:\n            start_date (datetime): Start of the time range.\n            end_date (datetime): End of the time range.\n\n        Returns:\n            List[PriceDataPoint]: List of price data points for the given range.\n\n        Raises:\n            HTTPException: If the API call fails or no data is available.\n        \"\"\"\n\n\n        # Laske Helsingin ja UTC:n aikaero tunteina\n        helsinki_offset = datetime.now(ZoneInfo(\"Europe/Helsinki\")).utcoffset()\n        utc_offset = datetime.now(ZoneInfo(\"UTC\")).utcoffset()\n        if helsinki_offset is not None and utc_offset is not None:\n            hours_difference = int((helsinki_offset - utc_offset).total_seconds() // 3600)\n        else:\n            hours_difference = 0  # fallback if offsets are None\n\n        start_date = start_date.replace(tzinfo=None) + timedelta(hours=hours_difference)\n        end_date = end_date.replace(tzinfo=None) + timedelta(hours=hours_difference)\n        try:\n            result = await self.porssisahko_service_tools.fetch_and_process_data(start_date, end_date)\n            return result if result else await self.ext_api_fetcher.fetch_price_data_range(start_date, end_date)\n        except Exception:\n            return await self.ext_api_fetcher.fetch_price_data_range(start_date, end_date)"
+  },
+  {
+    "file": "./App/python-server/services/data_service.py",
+    "type": "function",
+    "name": "services.data_service.PriceDataService.price_data_today",
+    "docstring": "Fetch price data for the current day in Helsinki time.\n\nReturns:\n    List[PriceDataPoint]: List of today's price data points.\n\nRaises:\n    HTTPException: If the API call fails or no data is available.",
+    "start_line": 124,
+    "code": "    async def price_data_today(self) -> List[PriceDataPoint]:\n        \"\"\"\n        Fetch price data for the current day in Helsinki time.\n\n        Returns:\n            List[PriceDataPoint]: List of today's price data points.\n\n        Raises:\n            HTTPException: If the API call fails or no data is available.\n        \"\"\"\n        data = await self.price_data_latest()\n        if data:\n            now_fi = datetime.now(ZoneInfo(\"Europe/Helsinki\"))\n            today_fi = now_fi.date()\n            filtered_data = [item for item in data if item.startDate.astimezone(ZoneInfo(\"Europe/Helsinki\")).date() == today_fi]\n            return sorted(filtered_data, key=lambda x: x.startDate, reverse=False)\n        else:\n            return await self.ext_api_fetcher.fetch_price_data_today()"
+  },
+  {
+    "file": "./App/python-server/services/data_service.py",
+    "type": "function",
+    "name": "services.data_service.PriceDataService.price_data_hourly_avg",
+    "docstring": "Fetch hourly average price data for a given time range.\n\nArgs:\n    time_range (TimeRangeRequest): Start and end time as datetime objects.\n\nReturns:\n    List[PriceHourlyAvgPricePoint]: List of hourly average price points.\n\nRaises:\n    HTTPException: If the API call fails or no data is available.",
+    "start_line": 143,
+    "code": "    async def price_data_hourly_avg(self, time_range):\n        \"\"\"\n        Fetch hourly average price data for a given time range.\n\n        Args:\n            time_range (TimeRangeRequest): Start and end time as datetime objects.\n\n        Returns:\n            List[PriceHourlyAvgPricePoint]: List of hourly average price points.\n\n        Raises:\n            HTTPException: If the API call fails or no data is available.\n        \"\"\"\n        data = await self.price_data_range(\n            time_range.startTime.replace(tzinfo=None),\n            time_range.endTime.replace(tzinfo=None)\n        )\n        return self.porssisahko_service_tools.calculate_hourly_avg_price(data)"
+  },
+  {
+    "file": "./App/python-server/services/data_service.py",
+    "type": "function",
+    "name": "services.data_service.PriceDataService.price_data_avg_by_weekday",
+    "docstring": "Calculate average price by weekday for a given time range.\n\nArgs:\n    time_range (TimeRangeRequest): Start and end time as datetime objects.\n\nReturns:\n    List[PriceAvgByWeekdayPoint]: List of average prices by weekday.",
+    "start_line": 164,
+    "code": "    async def price_data_avg_by_weekday(self, time_range: TimeRangeRequest, timezone_hki=False) -> List[PriceAvgByWeekdayPoint]:\n        \"\"\"\n        Calculate average price by weekday for a given time range.\n\n        Args:\n            time_range (TimeRangeRequest): Start and end time as datetime objects.\n\n        Returns:\n            List[PriceAvgByWeekdayPoint]: List of average prices by weekday.\n        \"\"\"\n        data = await self.price_data_range(\n            time_range.startTime.replace(tzinfo=None),\n            time_range.endTime.replace(tzinfo=None)\n        )\n        \n        return self.porssisahko_service_tools.calculate_avg_by_weekday(data, timezone_hki=timezone_hki)"
+  },
+  {
+    "file": "./App/python-server/config/__init__.py",
+    "type": "module",
+    "name": "__module__",
+    "docstring": "config package initializer\n\nLoads environment variables from .env files for the Eprice backend.",
+    "start_line": 1,
+    "code": ""
+  },
+  {
+    "file": "./App/python-server/config/secrets.py",
+    "type": "module",
+    "name": "__module__",
+    "docstring": "secrets.py\n\nConfiguration and secrets for the Eprice backend.\n\nThis module loads environment variables for database, JWT, and email settings.\nIt also defines the list of public routes that do not require authentication.",
+    "start_line": 1,
+    "code": ""
+  },
+  {
+    "file": "./App/python-server/main.py",
+    "type": "module",
+    "name": "__module__",
+    "docstring": "main.py initializes and configures the FastAPI application for the Eprice backend.\n\nFeatures:\n- Sets up application lifespan events for startup and shutdown, including checking and inserting missing price data on startup.\n- Registers custom exception handlers for request validation errors.\n- Configures CORS middleware for frontend and test environments.\n- Includes routers for authentication and external API endpoints.\n- Adds JWT authentication middleware for protected routes.\n- Integrates scheduled tasks and ensures graceful shutdown of background schedulers.\n\nDependencies:\n- fastapi for API framework and routing.\n- fastapi.middleware.cors for CORS configuration.\n- controllers for API route definitions.\n- scheduled_tasks for background data synchronization.\n- config for application and secret settings.\n- models.custom_exception for custom error handling.\n\nIntended Usage:\n- Entry point for running the Eprice backend server.\n- Should be run with a compatible ASGI server (e.g., uvicorn).",
+    "start_line": 1,
+    "code": ""
+  },
+  {
+    "file": "./App/python-server/main.py",
+    "type": "function",
+    "name": "main.lifespan",
+    "docstring": "Lifespan event handler for the FastAPI application.\nThis function is called when the application starts up and shuts down.\nIt is used to perform startup tasks, such as checking for missing data.\nOn shutdown, it ensures scheduled tasks are properly terminated.\n\nArgs:\n    app (FastAPI): The FastAPI application instance.",
+    "start_line": 42,
+    "code": "async def lifespan(app: FastAPI):\n    \"\"\"\n    Lifespan event handler for the FastAPI application.\n    This function is called when the application starts up and shuts down.\n    It is used to perform startup tasks, such as checking for missing data.\n    On shutdown, it ensures scheduled tasks are properly terminated.\n\n    Args:\n        app (FastAPI): The FastAPI application instance.\n    \"\"\"\n\n    # Startup code\n    print(\"Server is starting... Checking for missing data.\")\n    start_datetime = \"2025-05-12T23:00:00\"\n    await fetch_and_insert_missing_porssisahko_data(start_datetime)\n    print(\"Server started and missing data checked.\")\n    yield\n    # Shutdown code\n    shutdown_scheduler()"
+  },
+  {
+    "file": "./App/python-server/ext_apis/ext_apis.py",
+    "type": "module",
+    "name": "__module__",
+    "docstring": "ext_apis.py\n\nThis module provides service classes for fetching electricity production, consumption, and price data\nfrom external APIs (Fingrid and Porssisähkö). It handles API requests, rate limiting, retries, error handling,\nand conversion of API responses into application models used by the backend.\n\nDependencies:\n    - httpx: For making asynchronous HTTP requests to external APIs.\n    - python-dotenv: For loading environment variables (API keys) from .env files.\n    - fastapi: For raising HTTPException on API errors.\n    - models.data_model: For Pydantic data models used to structure API responses.\n    - zoneinfo: For timezone-aware datetime handling.\n    - datetime, typing, urllib.parse, os, asyncio: Standard library modules for time, typing, URL handling, environment, and async support.\n\nClasses:\n    - FetchFingridData: Fetches production and consumption data from the Fingrid API.\n    - FetchPriceData: Fetches electricity price data from the Porssisähkö API.",
+    "start_line": 1,
+    "code": ""
+  },
+  {
+    "file": "./App/python-server/ext_apis/ext_apis.py",
+    "type": "class",
+    "name": "ext_apis.ext_apis.FetchFingridData",
+    "docstring": "Service for fetching electricity production and consumption data from the Fingrid API.\n\nProvides methods to fetch the latest data point or a range of data points for a given Fingrid dataset.\nHandles API rate limiting, retries on failure, and parsing of the Fingrid API response into application models.",
+    "start_line": 37,
+    "code": "class FetchFingridData:\n    \"\"\"\n    Service for fetching electricity production and consumption data from the Fingrid API.\n\n    Provides methods to fetch the latest data point or a range of data points for a given Fingrid dataset.\n    Handles API rate limiting, retries on failure, and parsing of the Fingrid API response into application models.\n    \"\"\"\n\n    base_url = \"https://data.fingrid.fi/api/datasets/\"\n\n    def __init__(self):\n        self._lock = asyncio.Lock()\n        self._last_call_time: datetime | None = None\n        self._sleep_time = 1.5\n\n    async def _rate_limiter(self):\n        async with self._lock:\n            if self._last_call_time:\n                elapsed = (datetime.now(timezone.utc)- self._last_call_time).total_seconds()\n                if elapsed < self._sleep_time:\n                    await asyncio.sleep(self._sleep_time - elapsed)\n            self._last_call_time = datetime.now(timezone.utc)\n\n    async def fetch_fingrid_data(self, dataset_id: int) -> FingridDataPoint:\n        \"\"\"\n        Fetch the latest data point for a given Fingrid dataset ID.\n\n        Args:\n            dataset_id (int): The Fingrid dataset ID.\n\n        Returns:\n            FingridDataPoint: The closest data point to the current time.\n\n        Raises:\n            HTTPException: If the API call fails or no data is available.\n        \"\"\"\n        await self._rate_limiter() \n        url = f\"{self.base_url}{dataset_id}/data\"\n        headers = {}\n        if FINGRID_API_KEY is not None:\n            headers[\"x-api-key\"] = FINGRID_API_KEY\n        max_retries = 3\n        retry_delay = 3\n\n        for attempt in range(max_retries):\n            try:\n                async with httpx.AsyncClient() as client:\n                    # Remove any None values from headers to satisfy type checker\n                    clean_headers = {k: v for k, v in headers.items() if v is not None}\n                    response = await client.get(url, headers=clean_headers)\n                    response.raise_for_status()\n                    full_data = response.json()\n                    data = full_data.get(\"data\", [])\n\n                    if not data:\n                        raise ValueError(\"No data available from Fingrid API\")\n\n                    now = datetime.now(timezone.utc)\n\n                    def time_diff(item):\n                        start = datetime.fromisoformat(item[\"startTime\"].replace(\"Z\", \"+00:00\"))\n                        end = datetime.fromisoformat(item[\"endTime\"].replace(\"Z\", \"+00:00\"))\n                        return min(abs(start - now), abs(end - now))\n\n                    closest_item = min(data, key=time_diff)\n                    closest_item.pop(\"datasetId\", None)\n                    return FingridDataPoint(**closest_item)\n\n            except httpx.HTTPStatusError as exc:\n                if attempt == max_retries - 1:\n                    raise HTTPException(\n                        status_code=exc.response.status_code,\n                        detail=f\"HTTP error while fetching data for dataset {dataset_id} from Fingrid API. Number of attempts: {attempt +1}\"\n                    ) from exc\n                await asyncio.sleep(retry_delay)\n\n            except Exception as e:\n                raise HTTPException(\n                    status_code=500,\n                    detail=f\"Unexpected error fetching data for dataset {dataset_id} from Fingrid API.\"\n                ) from e\n        raise HTTPException(\n            status_code=500,\n            detail=f\"Failed to fetch data for dataset {dataset_id} from Fingrid API after {max_retries} attempts.\"\n        )\n        \n\n    async def fetch_fingrid_data_range(self, dataset_id: int, start_time: datetime, end_time: datetime) -> List[FingridDataPoint]:\n        \"\"\"\n        Fetch a list of data points for a given Fingrid dataset ID and time range.\n\n        Args:\n            dataset_id (int): The Fingrid dataset ID.\n            start_time (datetime): Start time in UTC.\n            end_time (datetime): End time in UTC.\n\n        Returns:\n            List[FingridDataPoint]: List of data points for the specified range.\n\n        Raises:\n            HTTPException: If the API call fails or no data is available.\n        \"\"\"\n        headers = {\"x-api-key\": FINGRID_API_KEY} if FINGRID_API_KEY is not None else {}\n        # Remove any None values from headers to satisfy type checker\n        headers = {k: v for k, v in headers.items() if v is not None}\n        url = f\"{self.base_url}{dataset_id}/data\"\n        max_retries = 3\n        retry_delay = 1\n\n            \n        query_params = {\n            \"startTime\": start_time.isoformat().replace(\"+00:00\", \"Z\"),\n            \"endTime\": end_time.isoformat().replace(\"+00:00\", \"Z\"),\n            \"sortBy\": \"startTime\",\n            \"sortOrder\": \"asc\",\n            \"pageSize\": \"20000\"\n        }\n\n        url = f\"{url}?{urlencode(query_params)}\"\n        for attempt in range(max_retries):\n            try:\n                async with httpx.AsyncClient() as client:\n                    response = await client.get(url, headers=headers)\n                    response.raise_for_status()\n                    full_data = response.json()\n                    data = full_data.get(\"data\", [])\n                    for item in data:\n                        item.pop(\"datasetId\", None)\n                    return [FingridDataPoint(**item) for item in data]\n            except httpx.HTTPStatusError as exc:\n                if attempt == max_retries - 1:\n                    raise HTTPException(\n                        status_code=exc.response.status_code,\n                        detail=f\"HTTP error while fetching data for dataset {dataset_id} from Fingrid API. Number of attempts: {attempt +1}\"\n                    ) from exc\n                await asyncio.sleep(retry_delay)\n\n            except Exception as e:\n                raise HTTPException(\n                    status_code=500,\n                    detail=f\"Unexpected error fetching data for dataset {dataset_id} from Fingrid API.\"\n                ) from e\n        raise HTTPException(\n            status_code=500,\n            detail=f\"Failed to fetch data for dataset {dataset_id} from Fingrid API after {max_retries} attempts.\""
+  },
+  {
+    "file": "./App/python-server/ext_apis/ext_apis.py",
+    "type": "class",
+    "name": "ext_apis.ext_apis.FetchPriceData",
+    "docstring": "Service for fetching electricity price data from the Porssisähkö API.\n\nProvides methods to fetch price data for a specific time range, the latest prices, or today's prices.\nHandles API requests, error handling, and conversion of API responses into application models.",
+    "start_line": 184,
+    "code": "class FetchPriceData:\n    \"\"\"\n    Service for fetching electricity price data from the Porssisähkö API.\n\n    Provides methods to fetch price data for a specific time range, the latest prices, or today's prices.\n    Handles API requests, error handling, and conversion of API responses into application models.\n    \"\"\"\n\n    base_url = \"https://api.porssisahko.net/v1/price.json\"\n\n    async def fetch_price_data_range(self, start_time: datetime, end_time: datetime):\n        \"\"\"\n        Fetch hourly electricity price data for a given time range from the Porssisähkö API.\n\n        Args:\n            start_time (datetime): Start time in UTC.\n            end_time (datetime): End time in UTC.\n\n        Returns:\n            list[dict]: A list of dictionaries with 'startDate' (ISO8601 UTC string) and 'price' (float) for each hour.\n\n        Raises:\n            HTTPException: If the API call fails or no data is available.\n        \"\"\"\n        result = []\n        current_time_utc = start_time\n        current_time_helsinki = start_time.astimezone(ZoneInfo(\"Europe/Helsinki\"))\n        end_time_helsinki = end_time.astimezone(ZoneInfo(\"Europe/Helsinki\"))\n\n        while current_time_helsinki <= end_time_helsinki:\n            date_str = current_time_helsinki.strftime(\"%Y-%m-%d\")\n            hour_str = current_time_helsinki.strftime(\"%H\")\n\n            query_params = {\n                \"date\": date_str,\n                \"hour\": hour_str\n            }\n\n            url = f\"{self.base_url}?{urlencode(query_params)}\"\n            try:\n                async with httpx.AsyncClient() as client:\n                    response = await client.get(url)\n                    response.raise_for_status()\n\n                    data = response.json()\n                    if not data:\n                        raise ValueError(f\"No price data returned for {date_str} {hour_str}\")\n\n\n                    result.append({\n                        \"startDate\": current_time_utc.strftime(\"%Y-%m-%dT%H:%M:%SZ\"),\n                        \"price\": data[\"price\"]\n                    })\n            except httpx.HTTPStatusError as exc:\n                raise HTTPException(\n                    status_code=exc.response.status_code,\n                    detail=f\"HTTP error while fetching price data from Porssisahko: {exc.response.status_code}: {exc.response.text}\"\n                ) from exc\n            except Exception as e:\n                raise HTTPException(\n                    status_code=500,\n                    detail=f\"Unexpected error occurred while fetching data from Porssisahko: {str(e)}\"\n                ) from e\n\n            current_time_helsinki += timedelta(hours=1)\n            current_time_utc += timedelta(hours=1)\n\n        return result\n\n\n    async def fetch_price_data_latest(self):\n        \"\"\"\n        Fetch the latest hourly electricity prices from the Porssisähkö API.\n\n        Returns:\n            List[PriceDataPoint]: A list of PriceDataPoint instances containing hourly electricity price data.\n                The 'endDate' key is removed from each dictionary.\n\n        Raises:\n            HTTPException: If the API call fails or no data is available.\n        \"\"\"\n        url = \"https://api.porssisahko.net/v1/latest-prices.json\"\n\n        try:\n            async with httpx.AsyncClient() as client:\n                response = await client.get(url)\n                response.raise_for_status()\n                data = response.json()[\"prices\"]\n\n                for item in data:\n                    item.pop(\"endDate\", None)\n\n                return [PriceDataPoint(**item) for item in data]\n\n        except httpx.HTTPStatusError as exc:\n            raise HTTPException(\n                status_code=exc.response.status_code,\n                detail=f\"HTTP error while fetching latest price data from Porssisahko: {exc.response.status_code} - {exc.response.text}\"\n            ) from exc\n        except Exception as e:\n            raise HTTPException(\n                status_code=500,\n                detail=f\"Unexpected error while fetching latest price data from Porssisahko: {str(e)}\"\n            ) from e\n\n\n\n    async def fetch_price_data_today(self) -> List[PriceDataPoint]:\n        \"\"\"\n        Fetch today's electricity price data and return it as a list of PriceDataPoint models.\n\n        The data is filtered so that only prices for the current day in Europe/Helsinki timezone are returned.\n\n        Returns:\n            List[PriceDataPoint]: A list of price data points for today.\n\n        Raises:\n            HTTPException: If the API call fails or no data is available.\n        \"\"\"\n        data = await self.fetch_price_data_latest()\n\n        # Get the current date in Finland's timezone\n        now_fi = datetime.now(ZoneInfo(\"Europe/Helsinki\"))\n        today_fi = now_fi.date()\n\n        # Filter data for today's date\n        \n        filtered_data = [item for item in data if item.startDate.astimezone(ZoneInfo(\"Europe/Helsinki\")).date() == today_fi]\n\n        # Convert filtered data to PriceDataPoint models\n        return [PriceDataPoint(**item.dict()) for item in filtered_data]"
+  },
+  {
+    "file": "./App/python-server/ext_apis/ext_apis.py",
+    "type": "function",
+    "name": "ext_apis.ext_apis.FetchFingridData.__init__",
+    "docstring": "",
+    "start_line": 47,
+    "code": "    def __init__(self):\n        self._lock = asyncio.Lock()\n        self._last_call_time: datetime | None = None\n        self._sleep_time = 1.5"
+  },
+  {
+    "file": "./App/python-server/ext_apis/ext_apis.py",
+    "type": "function",
+    "name": "ext_apis.ext_apis.FetchFingridData._rate_limiter",
+    "docstring": "",
+    "start_line": 52,
+    "code": "    async def _rate_limiter(self):\n        async with self._lock:\n            if self._last_call_time:\n                elapsed = (datetime.now(timezone.utc)- self._last_call_time).total_seconds()\n                if elapsed < self._sleep_time:\n                    await asyncio.sleep(self._sleep_time - elapsed)\n            self._last_call_time = datetime.now(timezone.utc)"
+  },
+  {
+    "file": "./App/python-server/ext_apis/ext_apis.py",
+    "type": "function",
+    "name": "ext_apis.ext_apis.FetchFingridData.fetch_fingrid_data",
+    "docstring": "Fetch the latest data point for a given Fingrid dataset ID.\n\nArgs:\n    dataset_id (int): The Fingrid dataset ID.\n\nReturns:\n    FingridDataPoint: The closest data point to the current time.\n\nRaises:\n    HTTPException: If the API call fails or no data is available.",
+    "start_line": 60,
+    "code": "    async def fetch_fingrid_data(self, dataset_id: int) -> FingridDataPoint:\n        \"\"\"\n        Fetch the latest data point for a given Fingrid dataset ID.\n\n        Args:\n            dataset_id (int): The Fingrid dataset ID.\n\n        Returns:\n            FingridDataPoint: The closest data point to the current time.\n\n        Raises:\n            HTTPException: If the API call fails or no data is available.\n        \"\"\"\n        await self._rate_limiter() \n        url = f\"{self.base_url}{dataset_id}/data\"\n        headers = {}\n        if FINGRID_API_KEY is not None:\n            headers[\"x-api-key\"] = FINGRID_API_KEY\n        max_retries = 3\n        retry_delay = 3\n\n        for attempt in range(max_retries):\n            try:\n                async with httpx.AsyncClient() as client:\n                    # Remove any None values from headers to satisfy type checker\n                    clean_headers = {k: v for k, v in headers.items() if v is not None}\n                    response = await client.get(url, headers=clean_headers)\n                    response.raise_for_status()\n                    full_data = response.json()\n                    data = full_data.get(\"data\", [])\n\n                    if not data:\n                        raise ValueError(\"No data available from Fingrid API\")\n\n                    now = datetime.now(timezone.utc)\n\n                    def time_diff(item):\n                        start = datetime.fromisoformat(item[\"startTime\"].replace(\"Z\", \"+00:00\"))\n                        end = datetime.fromisoformat(item[\"endTime\"].replace(\"Z\", \"+00:00\"))\n                        return min(abs(start - now), abs(end - now))\n\n                    closest_item = min(data, key=time_diff)\n                    closest_item.pop(\"datasetId\", None)\n                    return FingridDataPoint(**closest_item)\n\n            except httpx.HTTPStatusError as exc:\n                if attempt == max_retries - 1:\n                    raise HTTPException(\n                        status_code=exc.response.status_code,\n                        detail=f\"HTTP error while fetching data for dataset {dataset_id} from Fingrid API. Number of attempts: {attempt +1}\"\n                    ) from exc\n                await asyncio.sleep(retry_delay)\n\n            except Exception as e:\n                raise HTTPException(\n                    status_code=500,\n                    detail=f\"Unexpected error fetching data for dataset {dataset_id} from Fingrid API.\"\n                ) from e\n        raise HTTPException(\n            status_code=500,\n            detail=f\"Failed to fetch data for dataset {dataset_id} from Fingrid API after {max_retries} attempts.\""
+  },
+  {
+    "file": "./App/python-server/ext_apis/ext_apis.py",
+    "type": "function",
+    "name": "ext_apis.ext_apis.FetchFingridData.fetch_fingrid_data_range",
+    "docstring": "Fetch a list of data points for a given Fingrid dataset ID and time range.\n\nArgs:\n    dataset_id (int): The Fingrid dataset ID.\n    start_time (datetime): Start time in UTC.\n    end_time (datetime): End time in UTC.\n\nReturns:\n    List[FingridDataPoint]: List of data points for the specified range.\n\nRaises:\n    HTTPException: If the API call fails or no data is available.",
+    "start_line": 124,
+    "code": "    async def fetch_fingrid_data_range(self, dataset_id: int, start_time: datetime, end_time: datetime) -> List[FingridDataPoint]:\n        \"\"\"\n        Fetch a list of data points for a given Fingrid dataset ID and time range.\n\n        Args:\n            dataset_id (int): The Fingrid dataset ID.\n            start_time (datetime): Start time in UTC.\n            end_time (datetime): End time in UTC.\n\n        Returns:\n            List[FingridDataPoint]: List of data points for the specified range.\n\n        Raises:\n            HTTPException: If the API call fails or no data is available.\n        \"\"\"\n        headers = {\"x-api-key\": FINGRID_API_KEY} if FINGRID_API_KEY is not None else {}\n        # Remove any None values from headers to satisfy type checker\n        headers = {k: v for k, v in headers.items() if v is not None}\n        url = f\"{self.base_url}{dataset_id}/data\"\n        max_retries = 3\n        retry_delay = 1\n\n            \n        query_params = {\n            \"startTime\": start_time.isoformat().replace(\"+00:00\", \"Z\"),\n            \"endTime\": end_time.isoformat().replace(\"+00:00\", \"Z\"),\n            \"sortBy\": \"startTime\",\n            \"sortOrder\": \"asc\",\n            \"pageSize\": \"20000\"\n        }\n\n        url = f\"{url}?{urlencode(query_params)}\"\n        for attempt in range(max_retries):\n            try:\n                async with httpx.AsyncClient() as client:\n                    response = await client.get(url, headers=headers)\n                    response.raise_for_status()\n                    full_data = response.json()\n                    data = full_data.get(\"data\", [])\n                    for item in data:\n                        item.pop(\"datasetId\", None)\n                    return [FingridDataPoint(**item) for item in data]\n            except httpx.HTTPStatusError as exc:\n                if attempt == max_retries - 1:\n                    raise HTTPException(\n                        status_code=exc.response.status_code,\n                        detail=f\"HTTP error while fetching data for dataset {dataset_id} from Fingrid API. Number of attempts: {attempt +1}\"\n                    ) from exc\n                await asyncio.sleep(retry_delay)\n\n            except Exception as e:\n                raise HTTPException(\n                    status_code=500,\n                    detail=f\"Unexpected error fetching data for dataset {dataset_id} from Fingrid API.\"\n                ) from e\n        raise HTTPException(\n            status_code=500,\n            detail=f\"Failed to fetch data for dataset {dataset_id} from Fingrid API after {max_retries} attempts.\""
+  },
+  {
+    "file": "./App/python-server/ext_apis/ext_apis.py",
+    "type": "function",
+    "name": "ext_apis.ext_apis.FetchPriceData.fetch_price_data_range",
+    "docstring": "Fetch hourly electricity price data for a given time range from the Porssisähkö API.\n\nArgs:\n    start_time (datetime): Start time in UTC.\n    end_time (datetime): End time in UTC.\n\nReturns:\n    list[dict]: A list of dictionaries with 'startDate' (ISO8601 UTC string) and 'price' (float) for each hour.\n\nRaises:\n    HTTPException: If the API call fails or no data is available.",
+    "start_line": 194,
+    "code": "    async def fetch_price_data_range(self, start_time: datetime, end_time: datetime):\n        \"\"\"\n        Fetch hourly electricity price data for a given time range from the Porssisähkö API.\n\n        Args:\n            start_time (datetime): Start time in UTC.\n            end_time (datetime): End time in UTC.\n\n        Returns:\n            list[dict]: A list of dictionaries with 'startDate' (ISO8601 UTC string) and 'price' (float) for each hour.\n\n        Raises:\n            HTTPException: If the API call fails or no data is available.\n        \"\"\"\n        result = []\n        current_time_utc = start_time\n        current_time_helsinki = start_time.astimezone(ZoneInfo(\"Europe/Helsinki\"))\n        end_time_helsinki = end_time.astimezone(ZoneInfo(\"Europe/Helsinki\"))\n\n        while current_time_helsinki <= end_time_helsinki:\n            date_str = current_time_helsinki.strftime(\"%Y-%m-%d\")\n            hour_str = current_time_helsinki.strftime(\"%H\")\n\n            query_params = {\n                \"date\": date_str,\n                \"hour\": hour_str\n            }\n\n            url = f\"{self.base_url}?{urlencode(query_params)}\"\n            try:\n                async with httpx.AsyncClient() as client:\n                    response = await client.get(url)\n                    response.raise_for_status()\n\n                    data = response.json()\n                    if not data:\n                        raise ValueError(f\"No price data returned for {date_str} {hour_str}\")\n\n\n                    result.append({\n                        \"startDate\": current_time_utc.strftime(\"%Y-%m-%dT%H:%M:%SZ\"),\n                        \"price\": data[\"price\"]\n                    })\n            except httpx.HTTPStatusError as exc:\n                raise HTTPException(\n                    status_code=exc.response.status_code,\n                    detail=f\"HTTP error while fetching price data from Porssisahko: {exc.response.status_code}: {exc.response.text}\"\n                ) from exc\n            except Exception as e:\n                raise HTTPException(\n                    status_code=500,\n                    detail=f\"Unexpected error occurred while fetching data from Porssisahko: {str(e)}\"\n                ) from e\n\n            current_time_helsinki += timedelta(hours=1)\n            current_time_utc += timedelta(hours=1)\n\n        return result"
+  },
+  {
+    "file": "./App/python-server/ext_apis/ext_apis.py",
+    "type": "function",
+    "name": "ext_apis.ext_apis.FetchPriceData.fetch_price_data_latest",
+    "docstring": "Fetch the latest hourly electricity prices from the Porssisähkö API.\n\nReturns:\n    List[PriceDataPoint]: A list of PriceDataPoint instances containing hourly electricity price data.\n        The 'endDate' key is removed from each dictionary.\n\nRaises:\n    HTTPException: If the API call fails or no data is available.",
+    "start_line": 254,
+    "code": "    async def fetch_price_data_latest(self):\n        \"\"\"\n        Fetch the latest hourly electricity prices from the Porssisähkö API.\n\n        Returns:\n            List[PriceDataPoint]: A list of PriceDataPoint instances containing hourly electricity price data.\n                The 'endDate' key is removed from each dictionary.\n\n        Raises:\n            HTTPException: If the API call fails or no data is available.\n        \"\"\"\n        url = \"https://api.porssisahko.net/v1/latest-prices.json\"\n\n        try:\n            async with httpx.AsyncClient() as client:\n                response = await client.get(url)\n                response.raise_for_status()\n                data = response.json()[\"prices\"]\n\n                for item in data:\n                    item.pop(\"endDate\", None)\n\n                return [PriceDataPoint(**item) for item in data]\n\n        except httpx.HTTPStatusError as exc:\n            raise HTTPException(\n                status_code=exc.response.status_code,\n                detail=f\"HTTP error while fetching latest price data from Porssisahko: {exc.response.status_code} - {exc.response.text}\"\n            ) from exc\n        except Exception as e:\n            raise HTTPException(\n                status_code=500,\n                detail=f\"Unexpected error while fetching latest price data from Porssisahko: {str(e)}\"\n            ) from e"
+  },
+  {
+    "file": "./App/python-server/ext_apis/ext_apis.py",
+    "type": "function",
+    "name": "ext_apis.ext_apis.FetchPriceData.fetch_price_data_today",
+    "docstring": "Fetch today's electricity price data and return it as a list of PriceDataPoint models.\n\nThe data is filtered so that only prices for the current day in Europe/Helsinki timezone are returned.\n\nReturns:\n    List[PriceDataPoint]: A list of price data points for today.\n\nRaises:\n    HTTPException: If the API call fails or no data is available.",
+    "start_line": 291,
+    "code": "    async def fetch_price_data_today(self) -> List[PriceDataPoint]:\n        \"\"\"\n        Fetch today's electricity price data and return it as a list of PriceDataPoint models.\n\n        The data is filtered so that only prices for the current day in Europe/Helsinki timezone are returned.\n\n        Returns:\n            List[PriceDataPoint]: A list of price data points for today.\n\n        Raises:\n            HTTPException: If the API call fails or no data is available.\n        \"\"\"\n        data = await self.fetch_price_data_latest()\n\n        # Get the current date in Finland's timezone\n        now_fi = datetime.now(ZoneInfo(\"Europe/Helsinki\"))\n        today_fi = now_fi.date()\n\n        # Filter data for today's date\n        \n        filtered_data = [item for item in data if item.startDate.astimezone(ZoneInfo(\"Europe/Helsinki\")).date() == today_fi]\n\n        # Convert filtered data to PriceDataPoint models\n        return [PriceDataPoint(**item.dict()) for item in filtered_data]"
+  },
+  {
+    "file": "./App/python-server/ext_apis/ext_apis.py",
+    "type": "function",
+    "name": "ext_apis.ext_apis.FetchFingridData.fetch_fingrid_data.time_diff",
+    "docstring": "",
+    "start_line": 96,
+    "code": "                    def time_diff(item):\n                        start = datetime.fromisoformat(item[\"startTime\"].replace(\"Z\", \"+00:00\"))\n                        end = datetime.fromisoformat(item[\"endTime\"].replace(\"Z\", \"+00:00\"))\n                        return min(abs(start - now), abs(end - now))"
+  },
+  {
+    "file": "./App/python-server/repositories/porssisahko_repository.py",
+    "type": "module",
+    "name": "__module__",
+    "docstring": "porssisahko_repository.py defines the PorssisahkoRepository class for price data operations in the Eprice backend.\n\nThe repository provides asynchronous methods for:\n- Inserting single or multiple price entries into the porssisahko table.\n- Retrieving entries within a date range.\n- Finding missing hourly entries within a date range.\n\nAll operations interact directly with a PostgreSQL database using asyncpg for asynchronous access.\nThis repository is intended to be used by service and controller layers to abstract database logic\nfrom business and API logic.\n\nDependencies:\n- asyncpg for asynchronous PostgreSQL operations.\n- utils.porssisahko_tools for entry conversion utilities.\n\nIntended Usage:\n- Instantiate with a database connection URL.\n- Use in services or controllers for all price data-related database actions.",
+    "start_line": 1,
+    "code": ""
+  },
+  {
+    "file": "./App/python-server/repositories/porssisahko_repository.py",
+    "type": "class",
+    "name": "repositories.porssisahko_repository.PorssisahkoRepository",
+    "docstring": "Repository class for price data operations in the Eprice backend.\n\nProvides asynchronous methods for inserting and retrieving price entries,\nas well as finding missing entries. Interacts directly with the PostgreSQL\ndatabase using asyncpg.\n\nArgs:\n    database_url (str): The database connection URL.",
+    "start_line": 26,
+    "code": "class PorssisahkoRepository:\n    \"\"\"\n    Repository class for price data operations in the Eprice backend.\n\n    Provides asynchronous methods for inserting and retrieving price entries,\n    as well as finding missing entries. Interacts directly with the PostgreSQL\n    database using asyncpg.\n\n    Args:\n        database_url (str): The database connection URL.\n    \"\"\"\n    def __init__(self, database_url: str):\n        \"\"\"\n        Initialize the PorssisahkoRepository with a database connection URL.\n\n        Args:\n            database_url (str): The database connection URL.\n        \"\"\"\n        self.database_url = database_url\n\n    async def insert_entry(self, price: float, iso_date: str, predicted: bool = False, convert_to_helsinki_time: bool = True):\n        \"\"\"\n        Insert a single entry into the porssisahko table.\n\n        Args:\n            price (float): The price value.\n            iso_date (str): The date in ISO 8601 format.\n            predicted (bool): Indicates if the price is predicted. Default is False.\n\n        Raises:\n            asyncpg.PostgresError: If a database error occurs.\n        \"\"\"\n        conn = None\n        try:\n            # Convert the entry to the correct format\n            entry = convert_to_porssisahko_entry(price, iso_date, predicted, convert_to_helsinki_time)\n\n            # Connect to the database\n            conn = await asyncpg.connect(self.database_url)\n\n            # Insert the entry into the database\n            await conn.execute(\n                \"\"\"\n                INSERT INTO porssisahko (datetime, date, year, month, day, hour, weekday, price)\n                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)\n                ON CONFLICT (Datetime) DO NOTHING\n                \"\"\",\n                entry[\"datetime\"],\n                entry[\"date\"],\n                entry[\"year\"],\n                entry[\"month\"],\n                entry[\"day\"],\n                entry[\"hour\"],\n                entry[\"weekday\"],\n                entry[\"price\"]\n            )\n        except asyncpg.PostgresError as e:\n            print(f\"Database error: {e}\")\n            raise\n        finally:\n            if conn:\n                await conn.close()\n\n    async def insert_entries(self, entries: list, convert_to_helsinki_time: bool = True):\n        \"\"\"\n        Insert multiple entries into the porssisahko table.\n\n        Args:\n            entries (list[dict]): A list of dictionaries containing the data to insert.\n\n        Raises:\n            asyncpg.PostgresError: If a database error occurs.\n        \"\"\"\n        conn = None\n        try:\n            # Convert entries to the correct format\n            formatted_entries = [\n                convert_to_porssisahko_entry(entry[\"price\"], entry[\"startDate\"], predicted=entry.get(\"predicted\", False), convert_to_helsinki_time=convert_to_helsinki_time)\n                for entry in entries\n            ]\n\n            # Prepare the insert query\n            insert_query = \"\"\"\n                INSERT INTO porssisahko (datetime, date, year, month, day, hour, weekday, price)\n                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)\n                ON CONFLICT (Datetime) DO NOTHING\n            \"\"\"\n            # Create a list of tuples for the entries\n            values = [\n                (\n                    entry[\"datetime\"],\n                    entry[\"date\"],\n                    entry[\"year\"],\n                    entry[\"month\"],\n                    entry[\"day\"],\n                    entry[\"hour\"],\n                    entry[\"weekday\"],\n                    entry[\"price\"]\n                )\n                for entry in formatted_entries\n            ]\n\n            # Connect to the database\n            conn = await asyncpg.connect(self.database_url)\n\n            # Execute the insert query with the list of values\n            await conn.executemany(insert_query, values)\n        except asyncpg.PostgresError as e:\n            print(f\"Database error: {e}\")\n            raise\n        finally:\n            if conn:\n                await conn.close()\n\n    async def get_entries(self, start_date: datetime, end_date: datetime, select_columns: str = \"*\"):\n        \"\"\"\n        Retrieve entries from the porssisahko table between two dates.\n\n        Args:\n            start_date (datetime): The start date as a datetime object.\n            end_date (datetime): The end date as a datetime object.\n            select_columns (str): The columns to select from the table. Default is \"*\".\n\n        Returns:\n            list[dict]: A list of dictionaries containing the data for each entry.\n\n        Raises:\n            asyncpg.PostgresError: If a database error occurs.\n        \"\"\"\n        conn = None\n        try:\n            # Connect to the database\n            conn = await asyncpg.connect(self.database_url)\n\n            # Execute the query\n            rows = await conn.fetch(\n                f\"\"\"\n                SELECT {select_columns}\n                FROM porssisahko\n                WHERE datetime BETWEEN $1 AND $2\n                \"\"\",\n                start_date,\n                end_date\n            )\n\n            # Convert rows to a list of dictionaries\n            return [dict(row) for row in rows]\n        except asyncpg.PostgresError as e:\n            print(f\"Database error: {e}\")\n            raise\n        finally:\n            if conn:\n                await conn.close()\n\n    async def get_missing_entries(self, start_date: datetime, end_date: datetime):\n        \"\"\"\n        Retrieve missing hourly entries from the porssisahko table between two dates.\n\n        Args:\n            start_date (datetime): The start date as a datetime object.\n            end_date (datetime): The end date as a datetime object.\n\n        Returns:\n            list[tuple]: A list of tuples where each tuple contains the date (YYYY-MM-DD) and hour (0-23).\n\n        Raises:\n            asyncpg.PostgresError: If a database error occurs.\n        \"\"\"\n        conn = None\n        try:\n            # Connect to the database\n            conn = await asyncpg.connect(self.database_url)\n\n            # Execute the query to find missing entries\n            rows = await conn.fetch(\n                \"\"\"\n                WITH date_range AS (\n                    SELECT generate_series(\n                        $1::TIMESTAMP,\n                        $2::TIMESTAMP,\n                        '1 hour'::INTERVAL\n                    ) AS datetime\n                )\n                SELECT dr.datetime\n                FROM date_range dr\n                LEFT JOIN porssisahko p ON dr.datetime = p.datetime\n                WHERE p.datetime IS NULL\n                \"\"\",\n                start_date,\n                end_date\n            )\n\n            # Return the missing entries as a list of tuples\n            return [\n                (row[\"datetime\"].strftime(\"%Y-%m-%d\"), row[\"datetime\"].hour)\n                for row in rows\n            ]\n        except asyncpg.PostgresError as e:\n            print(f\"Database error: {e}\")\n            raise\n        finally:\n            if conn:\n                await conn.close()"
+  },
+  {
+    "file": "./App/python-server/repositories/porssisahko_repository.py",
+    "type": "function",
+    "name": "repositories.porssisahko_repository.PorssisahkoRepository.__init__",
+    "docstring": "Initialize the PorssisahkoRepository with a database connection URL.\n\nArgs:\n    database_url (str): The database connection URL.",
+    "start_line": 37,
+    "code": "    def __init__(self, database_url: str):\n        \"\"\"\n        Initialize the PorssisahkoRepository with a database connection URL.\n\n        Args:\n            database_url (str): The database connection URL.\n        \"\"\"\n        self.database_url = database_url"
+  },
+  {
+    "file": "./App/python-server/repositories/porssisahko_repository.py",
+    "type": "function",
+    "name": "repositories.porssisahko_repository.PorssisahkoRepository.insert_entry",
+    "docstring": "Insert a single entry into the porssisahko table.\n\nArgs:\n    price (float): The price value.\n    iso_date (str): The date in ISO 8601 format.\n    predicted (bool): Indicates if the price is predicted. Default is False.\n\nRaises:\n    asyncpg.PostgresError: If a database error occurs.",
+    "start_line": 46,
+    "code": "    async def insert_entry(self, price: float, iso_date: str, predicted: bool = False, convert_to_helsinki_time: bool = True):\n        \"\"\"\n        Insert a single entry into the porssisahko table.\n\n        Args:\n            price (float): The price value.\n            iso_date (str): The date in ISO 8601 format.\n            predicted (bool): Indicates if the price is predicted. Default is False.\n\n        Raises:\n            asyncpg.PostgresError: If a database error occurs.\n        \"\"\"\n        conn = None\n        try:\n            # Convert the entry to the correct format\n            entry = convert_to_porssisahko_entry(price, iso_date, predicted, convert_to_helsinki_time)\n\n            # Connect to the database\n            conn = await asyncpg.connect(self.database_url)\n\n            # Insert the entry into the database\n            await conn.execute(\n                \"\"\"\n                INSERT INTO porssisahko (datetime, date, year, month, day, hour, weekday, price)\n                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)\n                ON CONFLICT (Datetime) DO NOTHING\n                \"\"\",\n                entry[\"datetime\"],\n                entry[\"date\"],\n                entry[\"year\"],\n                entry[\"month\"],\n                entry[\"day\"],\n                entry[\"hour\"],\n                entry[\"weekday\"],\n                entry[\"price\"]\n            )\n        except asyncpg.PostgresError as e:\n            print(f\"Database error: {e}\")\n            raise\n        finally:\n            if conn:\n                await conn.close()"
+  },
+  {
+    "file": "./App/python-server/repositories/porssisahko_repository.py",
+    "type": "function",
+    "name": "repositories.porssisahko_repository.PorssisahkoRepository.insert_entries",
+    "docstring": "Insert multiple entries into the porssisahko table.\n\nArgs:\n    entries (list[dict]): A list of dictionaries containing the data to insert.\n\nRaises:\n    asyncpg.PostgresError: If a database error occurs.",
+    "start_line": 89,
+    "code": "    async def insert_entries(self, entries: list, convert_to_helsinki_time: bool = True):\n        \"\"\"\n        Insert multiple entries into the porssisahko table.\n\n        Args:\n            entries (list[dict]): A list of dictionaries containing the data to insert.\n\n        Raises:\n            asyncpg.PostgresError: If a database error occurs.\n        \"\"\"\n        conn = None\n        try:\n            # Convert entries to the correct format\n            formatted_entries = [\n                convert_to_porssisahko_entry(entry[\"price\"], entry[\"startDate\"], predicted=entry.get(\"predicted\", False), convert_to_helsinki_time=convert_to_helsinki_time)\n                for entry in entries\n            ]\n\n            # Prepare the insert query\n            insert_query = \"\"\"\n                INSERT INTO porssisahko (datetime, date, year, month, day, hour, weekday, price)\n                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)\n                ON CONFLICT (Datetime) DO NOTHING\n            \"\"\"\n            # Create a list of tuples for the entries\n            values = [\n                (\n                    entry[\"datetime\"],\n                    entry[\"date\"],\n                    entry[\"year\"],\n                    entry[\"month\"],\n                    entry[\"day\"],\n                    entry[\"hour\"],\n                    entry[\"weekday\"],\n                    entry[\"price\"]\n                )\n                for entry in formatted_entries\n            ]\n\n            # Connect to the database\n            conn = await asyncpg.connect(self.database_url)\n\n            # Execute the insert query with the list of values\n            await conn.executemany(insert_query, values)\n        except asyncpg.PostgresError as e:\n            print(f\"Database error: {e}\")\n            raise\n        finally:\n            if conn:\n                await conn.close()"
+  },
+  {
+    "file": "./App/python-server/repositories/porssisahko_repository.py",
+    "type": "function",
+    "name": "repositories.porssisahko_repository.PorssisahkoRepository.get_entries",
+    "docstring": "Retrieve entries from the porssisahko table between two dates.\n\nArgs:\n    start_date (datetime): The start date as a datetime object.\n    end_date (datetime): The end date as a datetime object.\n    select_columns (str): The columns to select from the table. Default is \"*\".\n\nReturns:\n    list[dict]: A list of dictionaries containing the data for each entry.\n\nRaises:\n    asyncpg.PostgresError: If a database error occurs.",
+    "start_line": 140,
+    "code": "    async def get_entries(self, start_date: datetime, end_date: datetime, select_columns: str = \"*\"):\n        \"\"\"\n        Retrieve entries from the porssisahko table between two dates.\n\n        Args:\n            start_date (datetime): The start date as a datetime object.\n            end_date (datetime): The end date as a datetime object.\n            select_columns (str): The columns to select from the table. Default is \"*\".\n\n        Returns:\n            list[dict]: A list of dictionaries containing the data for each entry.\n\n        Raises:\n            asyncpg.PostgresError: If a database error occurs.\n        \"\"\"\n        conn = None\n        try:\n            # Connect to the database\n            conn = await asyncpg.connect(self.database_url)\n\n            # Execute the query\n            rows = await conn.fetch(\n                f\"\"\"\n                SELECT {select_columns}\n                FROM porssisahko\n                WHERE datetime BETWEEN $1 AND $2\n                \"\"\",\n                start_date,\n                end_date\n            )\n\n            # Convert rows to a list of dictionaries\n            return [dict(row) for row in rows]\n        except asyncpg.PostgresError as e:\n            print(f\"Database error: {e}\")\n            raise\n        finally:\n            if conn:\n                await conn.close()"
+  },
+  {
+    "file": "./App/python-server/repositories/porssisahko_repository.py",
+    "type": "function",
+    "name": "repositories.porssisahko_repository.PorssisahkoRepository.get_missing_entries",
+    "docstring": "Retrieve missing hourly entries from the porssisahko table between two dates.\n\nArgs:\n    start_date (datetime): The start date as a datetime object.\n    end_date (datetime): The end date as a datetime object.\n\nReturns:\n    list[tuple]: A list of tuples where each tuple contains the date (YYYY-MM-DD) and hour (0-23).\n\nRaises:\n    asyncpg.PostgresError: If a database error occurs.",
+    "start_line": 180,
+    "code": "    async def get_missing_entries(self, start_date: datetime, end_date: datetime):\n        \"\"\"\n        Retrieve missing hourly entries from the porssisahko table between two dates.\n\n        Args:\n            start_date (datetime): The start date as a datetime object.\n            end_date (datetime): The end date as a datetime object.\n\n        Returns:\n            list[tuple]: A list of tuples where each tuple contains the date (YYYY-MM-DD) and hour (0-23).\n\n        Raises:\n            asyncpg.PostgresError: If a database error occurs.\n        \"\"\"\n        conn = None\n        try:\n            # Connect to the database\n            conn = await asyncpg.connect(self.database_url)\n\n            # Execute the query to find missing entries\n            rows = await conn.fetch(\n                \"\"\"\n                WITH date_range AS (\n                    SELECT generate_series(\n                        $1::TIMESTAMP,\n                        $2::TIMESTAMP,\n                        '1 hour'::INTERVAL\n                    ) AS datetime\n                )\n                SELECT dr.datetime\n                FROM date_range dr\n                LEFT JOIN porssisahko p ON dr.datetime = p.datetime\n                WHERE p.datetime IS NULL\n                \"\"\",\n                start_date,\n                end_date\n            )\n\n            # Return the missing entries as a list of tuples\n            return [\n                (row[\"datetime\"].strftime(\"%Y-%m-%d\"), row[\"datetime\"].hour)\n                for row in rows\n            ]\n        except asyncpg.PostgresError as e:\n            print(f\"Database error: {e}\")\n            raise\n        finally:\n            if conn:\n                await conn.close()"
+  },
+  {
+    "file": "./App/python-server/repositories/user_repository.py",
+    "type": "module",
+    "name": "__module__",
+    "docstring": "user_repository.py defines the UserRepository class for user-related database operations in the Eprice backend.\n\nThe repository provides asynchronous methods for:\n- Retrieving user records by email.\n- Creating new user accounts with hashed passwords and verification codes.\n- Verifying user email addresses using verification codes.\n- Updating verification codes for users.\n\nAll operations interact directly with a PostgreSQL database using asyncpg for asynchronous access.\nThis repository is intended to be used by service and controller layers to abstract database logic\nfrom business and API logic.\n\nDependencies:\n- asyncpg for asynchronous PostgreSQL operations.\n\nIntended Usage:\n- Instantiate with a database connection URL.\n- Use in authentication and user management services for all user-related database actions.",
+    "start_line": 1,
+    "code": ""
+  },
+  {
+    "file": "./App/python-server/repositories/user_repository.py",
+    "type": "class",
+    "name": "repositories.user_repository.UserRepository",
+    "docstring": "Repository class for user-related database operations in the Eprice backend.\n\nProvides asynchronous methods for retrieving, creating, and updating user records,\nas well as verifying user email addresses. Interacts directly with the PostgreSQL\ndatabase using asyncpg.\n\nArgs:\n    database_url (str): The database connection URL.",
+    "start_line": 23,
+    "code": "class UserRepository:\n    \"\"\"\n    Repository class for user-related database operations in the Eprice backend.\n\n    Provides asynchronous methods for retrieving, creating, and updating user records,\n    as well as verifying user email addresses. Interacts directly with the PostgreSQL\n    database using asyncpg.\n\n    Args:\n        database_url (str): The database connection URL.\n    \"\"\"\n    def __init__(self, database_url: str):\n        \"\"\"\n        Initialize the UserRepository with a database connection URL.\n\n        Args:\n            database_url (str): The database connection URL.\n        \"\"\"\n        self.database_url = database_url\n\n    async def get_user_by_email(self, email: str):\n        \"\"\"\n        Retrieve a user record by email address.\n\n        Args:\n            email (str): The user's email address.\n\n        Returns:\n            Record or None: The user record if found, otherwise None.\n        \"\"\"\n        conn = await asyncpg.connect(self.database_url)\n        try:\n            user = await conn.fetchrow(\"SELECT * FROM users WHERE email = $1\", email)\n            return user\n        finally:\n            await conn.close()\n    \n    async def create_user(self, email: str, password_hash: str, verification_code: str):\n        \"\"\"\n        Create a new user record in the database.\n\n        Args:\n            email (str): The user's email address.\n            password_hash (str): The hashed password.\n            verification_code (str): The email verification code.\n\n        Raises:\n            Exception: If the user could not be created.\n        \"\"\"\n        conn = await asyncpg.connect(self.database_url)\n        try:\n            await conn.execute(\n                \"INSERT INTO users (email, password_hash, verification_code) VALUES ($1, $2, $3)\",\n                email, password_hash, verification_code\n            )\n        finally:\n            await conn.close()\n\n    async def verify_code(self, email: str, verification_code: str):\n        \"\"\"\n        Verify a user's email address using a verification code.\n\n        Args:\n            email (str): The user's email address.\n            verification_code (str): The verification code to check.\n\n        Returns:\n            str: The result of the update operation.\n        \"\"\"\n        conn = await asyncpg.connect(self.database_url)\n        try:\n            result = await conn.execute(\n                \"UPDATE users SET is_verified = TRUE WHERE email = $1 AND verification_code = $2\",\n                email, verification_code\n            )\n            return result\n        finally:\n            await conn.close()\n\n    async def update_code(self, email: str, new_code: str):\n        \"\"\"\n        Update a user's verification code.\n\n        Args:\n            email (str): The user's email address.\n            new_code (str): The new verification code.\n\n        Raises:\n            Exception: If the update operation fails.\n        \"\"\"\n        conn = await asyncpg.connect(self.database_url)\n        try:\n            await conn.execute(\n                \"UPDATE users SET verification_code = $1 WHERE email = $2\",\n                new_code, email\n            )\n        finally:\n            await conn.close()\n\n    async def delete_user(self, email: str):\n        \"\"\"\n        Remove a user record from the database.\n\n        Args:\n            email (str): The user's email address.\n\n        Raises:\n            Exception: If the user could not be removed.\n        \"\"\"\n        conn = await asyncpg.connect(self.database_url)\n        try:\n            await conn.execute(\"DELETE FROM users WHERE email = $1\", email)\n        finally:\n            await conn.close()"
+  },
+  {
+    "file": "./App/python-server/repositories/user_repository.py",
+    "type": "function",
+    "name": "repositories.user_repository.UserRepository.__init__",
+    "docstring": "Initialize the UserRepository with a database connection URL.\n\nArgs:\n    database_url (str): The database connection URL.",
+    "start_line": 34,
+    "code": "    def __init__(self, database_url: str):\n        \"\"\"\n        Initialize the UserRepository with a database connection URL.\n\n        Args:\n            database_url (str): The database connection URL.\n        \"\"\"\n        self.database_url = database_url"
+  },
+  {
+    "file": "./App/python-server/repositories/user_repository.py",
+    "type": "function",
+    "name": "repositories.user_repository.UserRepository.get_user_by_email",
+    "docstring": "Retrieve a user record by email address.\n\nArgs:\n    email (str): The user's email address.\n\nReturns:\n    Record or None: The user record if found, otherwise None.",
+    "start_line": 43,
+    "code": "    async def get_user_by_email(self, email: str):\n        \"\"\"\n        Retrieve a user record by email address.\n\n        Args:\n            email (str): The user's email address.\n\n        Returns:\n            Record or None: The user record if found, otherwise None.\n        \"\"\"\n        conn = await asyncpg.connect(self.database_url)\n        try:\n            user = await conn.fetchrow(\"SELECT * FROM users WHERE email = $1\", email)\n            return user\n        finally:\n            await conn.close()"
+  },
+  {
+    "file": "./App/python-server/repositories/user_repository.py",
+    "type": "function",
+    "name": "repositories.user_repository.UserRepository.create_user",
+    "docstring": "Create a new user record in the database.\n\nArgs:\n    email (str): The user's email address.\n    password_hash (str): The hashed password.\n    verification_code (str): The email verification code.\n\nRaises:\n    Exception: If the user could not be created.",
+    "start_line": 60,
+    "code": "    async def create_user(self, email: str, password_hash: str, verification_code: str):\n        \"\"\"\n        Create a new user record in the database.\n\n        Args:\n            email (str): The user's email address.\n            password_hash (str): The hashed password.\n            verification_code (str): The email verification code.\n\n        Raises:\n            Exception: If the user could not be created.\n        \"\"\"\n        conn = await asyncpg.connect(self.database_url)\n        try:\n            await conn.execute(\n                \"INSERT INTO users (email, password_hash, verification_code) VALUES ($1, $2, $3)\",\n                email, password_hash, verification_code\n            )\n        finally:\n            await conn.close()"
+  },
+  {
+    "file": "./App/python-server/repositories/user_repository.py",
+    "type": "function",
+    "name": "repositories.user_repository.UserRepository.verify_code",
+    "docstring": "Verify a user's email address using a verification code.\n\nArgs:\n    email (str): The user's email address.\n    verification_code (str): The verification code to check.\n\nReturns:\n    str: The result of the update operation.",
+    "start_line": 81,
+    "code": "    async def verify_code(self, email: str, verification_code: str):\n        \"\"\"\n        Verify a user's email address using a verification code.\n\n        Args:\n            email (str): The user's email address.\n            verification_code (str): The verification code to check.\n\n        Returns:\n            str: The result of the update operation.\n        \"\"\"\n        conn = await asyncpg.connect(self.database_url)\n        try:\n            result = await conn.execute(\n                \"UPDATE users SET is_verified = TRUE WHERE email = $1 AND verification_code = $2\",\n                email, verification_code\n            )\n            return result\n        finally:\n            await conn.close()"
+  },
+  {
+    "file": "./App/python-server/repositories/user_repository.py",
+    "type": "function",
+    "name": "repositories.user_repository.UserRepository.update_code",
+    "docstring": "Update a user's verification code.\n\nArgs:\n    email (str): The user's email address.\n    new_code (str): The new verification code.\n\nRaises:\n    Exception: If the update operation fails.",
+    "start_line": 102,
+    "code": "    async def update_code(self, email: str, new_code: str):\n        \"\"\"\n        Update a user's verification code.\n\n        Args:\n            email (str): The user's email address.\n            new_code (str): The new verification code.\n\n        Raises:\n            Exception: If the update operation fails.\n        \"\"\"\n        conn = await asyncpg.connect(self.database_url)\n        try:\n            await conn.execute(\n                \"UPDATE users SET verification_code = $1 WHERE email = $2\",\n                new_code, email\n            )\n        finally:\n            await conn.close()"
+  },
+  {
+    "file": "./App/python-server/repositories/user_repository.py",
+    "type": "function",
+    "name": "repositories.user_repository.UserRepository.delete_user",
+    "docstring": "Remove a user record from the database.\n\nArgs:\n    email (str): The user's email address.\n\nRaises:\n    Exception: If the user could not be removed.",
+    "start_line": 122,
+    "code": "    async def delete_user(self, email: str):\n        \"\"\"\n        Remove a user record from the database.\n\n        Args:\n            email (str): The user's email address.\n\n        Raises:\n            Exception: If the user could not be removed.\n        \"\"\"\n        conn = await asyncpg.connect(self.database_url)\n        try:\n            await conn.execute(\"DELETE FROM users WHERE email = $1\", email)\n        finally:\n            await conn.close()"
+  }
+]

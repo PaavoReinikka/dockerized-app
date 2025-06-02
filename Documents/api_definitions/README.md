@@ -1,0 +1,1 @@
+API documentation for this project in OpenAPI.json file. IT can be viewed in vscode with "OpenAPI Edit" or "Swagger Viewer" plugin.

@@ -1,0 +1,13 @@
+# ignore .env file
+.env*
+!.env.development
+# ignore __pycache__ directories
+__pycache__/
+# ignore .DS_Store files
+.DS_Store
+# ignore uv.lock
+uv.lock
+# ignore .venv directory
+.venv/
+# ignore .pytest_cache directory
+.pytest_cache/

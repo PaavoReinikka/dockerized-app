@@ -1,0 +1,7 @@
+#ignore .venv
+.venv/
+
+__pycache__/
+
+.gradio/
+.env.private

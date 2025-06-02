@@ -1,0 +1,62 @@
+@startuml
+title Sequence Diagram for User Registration, Login, Verification, and Logout using form-actions and JWT
+
+Client -> ClientServer: register form-action
+ClientServer -> Server: api/auth/register
+Server -> Database: insert new user into database
+note over Server, Database: hash password and attempt to insert\nif email not already registered
+alt registration success
+    Server -> EmailService: send verification code to email
+    EmailService --> Server: email sent
+    Server --> Client: registration success (prompt verify)
+else registration failure
+    Server --> Client: registration failure
+end
+note over Client: On success: prompt for verification code
+
+Client -> ClientServer: verify form-action (email, code)
+ClientServer -> Server: api/auth/verify
+Server -> Database: update user is_verified if code matches
+Database --> Server: success/failure
+alt verification success
+    Server --> Client: verification success
+else verification failure
+    Server --> Client: verification failure
+end
+
+Client -> ClientServer: resend verification code form-action (email)
+ClientServer -> Server: api/auth/resend
+Server -> Database: update verification_code for user
+alt update success
+    Server -> EmailService: send new verification code to email
+    EmailService --> Server: email sent
+    Server --> Client: resend success
+else update failure
+    Server --> Client: resend failure
+end
+
+Client -> ClientServer: login form-action (email, password)
+ClientServer -> Server: api/auth/login
+Server -> Database: select user from database
+Database --> Server: user data / not found
+alt user found
+    Server -> Server: verify password hash
+    alt password correct and is_verified
+        Server -> Server: pack user info in JWT
+        Server --> ClientServer: login success and set-cookie (JWT)
+        note over Client, ClientServer: JWT available to client components
+    else not verified
+        Server --> ClientServer: login failure (email not verified)
+    else password incorrect
+        Server --> ClientServer: login failure (wrong credentials)
+    end
+else user not found
+    Server --> ClientServer: login failure (wrong credentials)
+end
+
+Client -> ClientServer: logout form-action
+ClientServer -> Server: api/auth/logout
+Server --> ClientServer: delete JWT cookie
+note over ClientServer, Client: Client server clears JWT payload
+
+@enduml
