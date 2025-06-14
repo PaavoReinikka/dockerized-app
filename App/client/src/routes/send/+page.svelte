@@ -14,18 +14,20 @@
 <p class="text-xl text-red-500">{form.error}</p>
 {/if}
 
-<form class="space-y-4" method="POST" action="?/resend" enctype="application/json">
-    <label class="label" for="email">
-        <span class="label-text">Email</span>
-        <input
-            class="input"
-            id="email"
-            name="email"
-            type="email"
-            placeholder="Email"
-            required />
-    </label>
-    <button class="w-full btn preset-filled-primary-500" type="submit">
-      Send
-    </button>
-</form>
+<div class="max-w-xl mx-auto mt-20" >
+    <form class="space-y-4" method="POST" action="?/resend" enctype="application/json">
+        <label class="label" for="email">
+            <span class="label-text">Email</span>
+            <input
+                class="input"
+                id="email"
+                name="email"
+                type="email"
+                placeholder="Email"
+                required />
+        </label>
+        <button class="w-full btn preset-filled-primary-500" type="submit">
+        Send
+        </button>
+    </form>
+</div>

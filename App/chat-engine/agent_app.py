@@ -9,8 +9,6 @@ import gradio as gr
 from agent_manager import AgentManager
 from autoloading_uml import uml_viewer
 from langchain.schema import HumanMessage, AIMessage
-import os
-from utils.db_calls import load_documents_from_db, get_all_files
 import dotenv
 dotenv.load_dotenv(".env.private")
 

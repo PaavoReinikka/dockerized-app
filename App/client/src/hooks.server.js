@@ -10,7 +10,7 @@ export const handle = async ({ event, resolve }) => {
       const payload = decodeJwt(authCookie);
       event.locals.user = payload;
     } catch (e) {
-      console.log(e);
+      //console.log(e);
     }
   }
 

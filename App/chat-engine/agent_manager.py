@@ -221,7 +221,7 @@ class AgentManager:
 
     def _setup_agent(self):
         self.llm_streaming = ChatOpenAI(
-            model="gpt-4o-mini",
+            model="gpt-4o",
             temperature=0.2,
             streaming=True,
         )

@@ -67,13 +67,7 @@ A Svelte frontend can use form actions and server-side calls for sensitive or re
 
 ## Summary Diagram
 
-```plantuml
-@startuml
-[Svelte Form] --> [Controller (FastAPI Route)]
-[Controller (FastAPI Route)] --> [Service (Business Logic)]
-[Service (Business Logic)] --> [Repository (Database Access)]
-[Repository (Database Access)] --> [Database]
-@enduml
-```
+![Summary of controller-service-repository design](./diagrams/images/controller-service-repository_design.png)
+
 
 This pattern helps build robust, maintainable, and secure web applications, especially when handling authentication and other sensitive operations.

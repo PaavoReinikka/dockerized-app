@@ -420,3 +420,43 @@ def get_all_files():
     conn.close()
     
     return files
+
+def truncate_table(table_name):
+    """
+    Truncate (remove all rows from) a table.
+    Args:
+        table_name (str): Name of the table to truncate.
+    """
+    conn = psycopg.connect(
+        dbname=os.getenv("PGDATABASE"),
+        user=os.getenv("PGUSER"),
+        password=os.getenv("PGPASSWORD"),
+        host=os.getenv("PGHOST"),
+        port=os.getenv("PGPORT")
+    )
+    cur = conn.cursor()
+    cur.execute(f"TRUNCATE TABLE {table_name} RESTART IDENTITY CASCADE;")
+    conn.commit()
+    cur.close()
+    conn.close()
+
+def drop_table(table_name, cascade=False):
+    """
+    Drop a table from the database.
+    Args:
+        table_name (str): Name of the table to drop.
+        cascade (bool): Whether to use CASCADE option.
+    """
+    conn = psycopg.connect(
+        dbname=os.getenv("PGDATABASE"),
+        user=os.getenv("PGUSER"),
+        password=os.getenv("PGPASSWORD"),
+        host=os.getenv("PGHOST"),
+        port=os.getenv("PGPORT")
+    )
+    cur = conn.cursor()
+    sql = f"DROP TABLE IF EXISTS {table_name} {'CASCADE' if cascade else ''};"
+    cur.execute(sql)
+    conn.commit()
+    cur.close()
+    conn.close()

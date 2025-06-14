@@ -32,7 +32,7 @@
 {/if}
 
 
-    <form method="POST" action="?/logout" class="p-8">
-        <button class="w-full btn preset-filled-primary-500" type="submit">Logout</button>
+    <form method="POST" action="?/logout2" class="p-8">
+        <button class="w-full btn preset-filled-primary-500" type="submit" id="logout-button">Logout</button>
     </form>
 </div>

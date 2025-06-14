@@ -1,0 +1,6 @@
+@startuml
+[Svelte Form] --> [Controller (FastAPI Route)]
+[Controller (FastAPI Route)] --> [Service (Business Logic)]
+[Service (Business Logic)] --> [Repository (Database Access)]
+[Repository (Database Access)] --> [Database]
+@enduml

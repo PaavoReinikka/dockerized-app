@@ -8,16 +8,27 @@
 │   │   ├── Dockerfile
 │   │   ├── README.md
 │   │   └── tests
-│   │       └── test_auth_controller.py
+│   │       ├── test_auth_controller.py
+│   │       └── test_data_controller.py
 │   ├── chat-engine
 │   │   ├── Dockerfile
 │   │   ├── README.md
-│   │   ├── gradio_dashboard.py
-│   │   └── run.sh
+│   │   ├── agent_app.py
+│   │   ├── agent_manager.py
+│   │   ├── app.py
+│   │   ├── autoloading_uml.py
+│   │   ├── chat_app.py
+│   │   ├── chat_manager_with_tools.py
+│   │   ├── file_app.py
+│   │   ├── diagrams
+│   │   └── utils
+│   │       ├── __init__.py
+│   │       ├── db_calls.py
+│   │       ├── helpers.py
+│   │       └── tools.py
 │   ├── client
 │   │   ├── Dockerfile
 │   │   ├── README.md
-│   │   ├── docker
 │   │   ├── src
 │   │   │   ├── app.css
 │   │   │   ├── app.html
@@ -26,32 +37,54 @@
 │   │   │   │   ├── apis
 │   │   │   │   │   └── data-api.js
 │   │   │   │   ├── assets
-│   │   │   │   │   ├── image.png
-│   │   │   │   │   ├── image2.png
-│   │   │   │   │   ├── image3.png
-│   │   │   │   │   ├── image4.png
-│   │   │   │   │   └── image5.png
+│   │   │   │   │   ├── image12.jpg
+│   │   │   │   │   └── image3.png
 │   │   │   │   ├── components
 │   │   │   │   │   ├── ChatBot.svelte
-│   │   │   │   │   ├── MainChart.svelte
+│   │   │   │   │   ├── ChatView1.svelte
+│   │   │   │   │   ├── ChatView2.svelte
+│   │   │   │   │   ├── ChatView3.svelte
+│   │   │   │   │   ├── ChatView4.svelte
+│   │   │   │   │   ├── PriceCards.svelte
+│   │   │   │   │   ├── Tabs.svelte
 │   │   │   │   │   └── layout
+│   │   │   │   │       ├── Clock.svelte
 │   │   │   │   │       ├── Footer.svelte
 │   │   │   │   │       ├── Header.svelte
-│   │   │   │   │       └── PriceBall.svelte
-│   │   │   │   └── states
-│   │   │   │       ├── usePricesState.svelte.js
-│   │   │   │       └── userState.svelte.js
+│   │   │   │   │       └── User.svelte
+│   │   │   │   ├── states
+│   │   │   │   │   ├── usePricesState.svelte.js
+│   │   │   │   │   └── userState.svelte.js
+│   │   │   │   └── utils
+│   │   │   │       ├── clock.js
+│   │   │   │       ├── date-helpers.js
+│   │   │   │       └── stats-helpers.js
 │   │   │   └── routes
 │   │   │       ├── +layout.js
 │   │   │       ├── +layout.server.js
 │   │   │       ├── +layout.svelte
+│   │   │       ├── +page.server.js
 │   │   │       ├── +page.svelte
+│   │   │       ├── OLDpage.svelte
+│   │   │       ├── api
+│   │   │       │   └── devchat
+│   │   │       │       └── +server.js
 │   │   │       ├── auth
 │   │   │       │   └── [action]
 │   │   │       │       ├── +page.js
 │   │   │       │       ├── +page.server.js
 │   │   │       │       └── +page.svelte
+│   │   │       ├── chat
+│   │   │       │   ├── +page.server.js
+│   │   │       │   └── +page.svelte
+│   │   │       ├── epc
+│   │   │       │   ├── +page.server.js
+│   │   │       │   └── +page.svelte
 │   │   │       ├── logout
+│   │   │       │   ├── +page.js
+│   │   │       │   ├── +page.server.js
+│   │   │       │   └── +page.svelte
+│   │   │       ├── price
 │   │   │       │   ├── +page.server.js
 │   │   │       │   └── +page.svelte
 │   │   │       └── send
@@ -60,6 +93,7 @@
 │   │   └── static
 │   │       └── favicon.png
 │   ├── data-preparation
+│   │   ├── README.md
 │   │   └── scripts
 │   │       ├── Dockerfile
 │   │       ├── README.md
@@ -67,7 +101,11 @@
 │   │       ├── populate_porssisahko.py
 │   │       └── retrieve_porssisahko_update.sh
 │   ├── database-migrations
-│   │   ├── V10__documents_constraint.sql
+│   │   ├── V10__code_constraint.sql
+│   │   ├── V11__documents.sql
+│   │   ├── V12__files.sql
+│   │   ├── V13__fingrid.sql
+│   │   ├── V14__fingrid_load_entries.sql
 │   │   ├── V1__users.sql
 │   │   ├── V2__porssisahko.sql
 │   │   ├── V3__timezone.sql
@@ -75,11 +113,13 @@
 │   │   ├── V5__porssisahko_load_entries.sql
 │   │   ├── V6__users_add_isverified.sql
 │   │   ├── V8__extension_vector.sql
-│   │   └── V9__documents.sql
+│   │   └── V9__code.sql
 │   ├── e2e-tests
 │   │   ├── Dockerfile
+│   │   ├── README.md
 │   │   └── tests
-│   │       └── example.spec.js
+│   │       ├── auth.spec.js
+│   │       └── home.spec.js
 │   └── python-server
 │       ├── Dockerfile
 │       ├── README.md
@@ -98,6 +138,7 @@
 │       │   ├── data_model.py
 │       │   └── user_model.py
 │       ├── repositories
+│       │   ├── fingrid_repository.py
 │       │   ├── porssisahko_repository.py
 │       │   └── user_repository.py
 │       ├── scheduled_tasks
@@ -107,20 +148,26 @@
 │       │   └── data_service.py
 │       └── utils
 │           ├── email_tools.py
+│           ├── fingrid_service_tools.py
 │           ├── porssisahko_service_tools.py
 │           └── porssisahko_tools.py
 └── Documents
+    ├── CONTRIBUTIONS.md
     ├── README.md
     ├── backend_design.md
+    ├── frontend_description.md
     ├── openapi_endpoint_descriptions.md
     ├── project_description.md
     ├── project_directory_structure.txt
+    ├── testing_plan.md
     └── diagrams
         └── sources
             ├── authentication_call_sequence_diagram.wsd
             ├── authentication_class_diagram.wsd
             ├── authentication_use_case.wsd
+            ├── controller-service-repository_design.wsd
             ├── data_access_call_sequence_diagram.wsd
+            ├── frontend_structure.wsd
             ├── llm_retrieval.wsd
             ├── services_diagram.wsd
             ├── tool_calling.wsd

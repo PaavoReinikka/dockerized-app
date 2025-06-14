@@ -12,7 +12,7 @@
   });
 </script>
 
-<header class="flex items-center justify-between bg-primary-contrast-50 shadow-xl p-4 mb-2">
+<header class="flex items-center justify-between bg-black drop-shadow-xl backdrop-blur-lg p-4 mb-2">
 <!--<header class="flex items-center bg-primary-300 p-4 mb-6">-->
   <h1 class="text-2xl text-white">Electricity prices</h1>
     <nav>
@@ -22,44 +22,34 @@
         </li>
         {#if user}
         <li>
-          <a href="/pricetable" class="">Price Table</a>
+          <a href="/epc" id="epc-link" class="">Production/Consumption</a>
         </li>
         <li>
-          <a href="/epc" class="">Production/Consumption</a>
-        </li>
-        <li>
-          <a href="/price" class="">Price</a>
+          <a href="/price" id="price-link" class="">Price</a>
         </li>
         {:else}
             <li>
-              <a href="/auth/login" class="">Login</a>
+              <a href="/auth/login" id="login-link" class="">Login</a>
             </li>
             <li>
-              <a href="/auth/register" class="">Register</a>
+              <a href="/auth/register" id="register-link" class="">Register</a>
           </li>
         {/if}
       </ul>
     </nav>
-    <!-- {#if user?.role === 'admin' && devChatAvailable}
-      <ul class="ml-4 flex space-x-4 text-white">
-        <li>
-          <a href="/chat" class="text-white ml-4">Developer Chat</a>
-        </li>
-      </ul>
-    {/if} -->
     {#if user && $page.url.pathname !== '/logout'}
       <div class="ml-auto">
         <ul class="ml-4 flex space-x-4 text-white">
           {#if user.role === 'admin' && devChatAvailable}
             <li>
-              <a href="/chat" class="underline text-white font-bold">Developer Chat</a>
+              <a href="/chat" id="developer-chat-link" class="underline text-white font-bold">Developer Chat</a>
             </li>
           {/if}
           <li>
-            <a href="/auth/remove" class="underline text-white">Delete account</a>
+            <a href="/auth/remove" id="delete-link" class="underline text-white">Delete account</a>
           </li>
           <li>
-            <a href="/logout" class="underline text-white">Logout</a>
+            <a href="/logout" class="underline text-white" id="logout-link">Logout</a>
           </li>
         </ul>
       </div>

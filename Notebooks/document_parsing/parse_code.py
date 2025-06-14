@@ -426,9 +426,12 @@ def main():
         if args.replace_source is not None and args.replace_target is not None:
             code_blocks = replace_filepath_prefix(code_blocks, args.replace_source, args.replace_target)
         all_blocks.extend(code_blocks)
-        for block in code_blocks:
-            print(code_block_to_string(block))
-            print("=" * 40)
+
+        if not args.output:
+            for block in code_blocks:
+                print(code_block_to_string(block))
+                print("=" * 40)
+    
     if args.output:
         save_code_blocks_to_json(all_blocks, args.output)
 

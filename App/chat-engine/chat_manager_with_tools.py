@@ -53,6 +53,7 @@ system_message = (
             "Always first use the project_search tool to retrieve relevant information from the project documents.\n"
             "If project_search does not provide sufficient information, then try looking up individual files using get_file_by_name.\n"
             "You can use get_project_directory_structure to understand the project structure and see what files are available.\n"
+            "Be pro-active in using these tools to find the information needed to answer the user's question.\n"
             "If you get name conflicts when you use get_file_by_name tool, try using the full file name with path.\n"
             "If the answer is in the documents or files, provide it and reference the document(s) or file(s) used.\n"
             "If the answer is not in the documents or files, state that the documents do not contain the answer.\n"
@@ -187,9 +188,22 @@ class Embedder:
             embeddings = self.model(**inputs).last_hidden_state.mean(dim=1).squeeze().cpu().numpy()
         return embeddings.tolist()
     
-    def count_tokens(self, text: str) -> int:
+    def _count_tokens(self, text: str) -> int:
         """Count the number of tokens in the input text."""
         return len(self.tokenizer.encode(text, add_special_tokens=False))
+
+    # This is solely for suppressing the token limit warning in the Hugging Face tokenizer
+    def count_tokens(self, text: str) -> int:
+        """Count the number of tokens in the input text, handling texts longer than the model's max length."""
+        max_length = getattr(self.tokenizer.model_max_length, "item", lambda: self.tokenizer.model_max_length)()
+        tokens = self.tokenizer.encode(text, add_special_tokens=False)
+        if len(tokens) <= max_length:
+            return len(tokens)
+        # For long texts, split into chunks and sum
+        return sum(
+            len(tokens[i:i+max_length])
+            for i in range(0, len(tokens), max_length)
+        )
     
 class WrappedEmbedder:
     def __init__(self, model_name: str = "BAAI/bge-small-en"):
@@ -259,7 +273,7 @@ class ChatManagerWithTools:
 
     def _setup_llm(self):
         self.llm = ChatOpenAI(
-            model="gpt-4o-mini",
+            model="gpt-4o",
             temperature=0.2,
             streaming=True,
         )
@@ -289,6 +303,15 @@ class ChatManagerWithTools:
         while self._count_memory_tokens() > max_tokens and messages:
             # Remove the oldest message (after system message)
             messages.pop(0)
+
+    def _enforce_memory_message_limit(self, max_messages: int = 20):
+        """
+        Keeps only the most recent `max_messages` in memory.
+        """
+        messages = self.message_history.messages
+        if len(messages) > max_messages:
+            # Remove oldest messages, keep only the last `max_messages`
+            del messages[:len(messages) - max_messages]
 
     # All the milk and honey is here
     async def stream_response(self, user_message: str):
@@ -331,7 +354,8 @@ class ChatManagerWithTools:
         # Update memory
         self.message_history.add_user_message(user_message)
         self.message_history.add_ai_message(assistant_reply)
-        self._enforce_memory_limit(max_tokens=4000)
+        # self._enforce_memory_limit(max_tokens=4000)
+        self._enforce_memory_message_limit(max_messages=20)
 
     def _extract_tool_call(self, text: str) -> Dict[str, Any] | None:
         # Look for a JSON block in the LLM output

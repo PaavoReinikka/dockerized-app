@@ -6,3 +6,4 @@ images
 TEMPORARY
 pgdata
 data
+pdfs

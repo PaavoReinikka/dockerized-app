@@ -121,38 +121,34 @@ class FetchFingridData:
         )
         
 
-    async def fetch_fingrid_data_range(self, dataset_id: int, start_time: datetime, end_time: datetime) -> List[FingridDataPoint]:
+    async def fetch_fingrid_data_range(self, dataset_id: int, time_range: TimeRange) -> List[FingridDataPoint]:
         """
-        Fetch a list of data points for a given Fingrid dataset ID and time range.
+        Fetch a list of data points for a given Fingrid dataset ID and time range,
+        but return only data points that are aligned with full hours (e.g., 13:00, 14:00).
 
         Args:
             dataset_id (int): The Fingrid dataset ID.
-            start_time (datetime): Start time in UTC.
-            end_time (datetime): End time in UTC.
+            time_range (TimeRange): Time range with startTime and endTime (both in UTC).
 
         Returns:
-            List[FingridDataPoint]: List of data points for the specified range.
-
-        Raises:
-            HTTPException: If the API call fails or no data is available.
+            List[FingridDataPoint]: Filtered list of data points for the specified range.
         """
         headers = {"x-api-key": FINGRID_API_KEY} if FINGRID_API_KEY is not None else {}
-        # Remove any None values from headers to satisfy type checker
         headers = {k: v for k, v in headers.items() if v is not None}
         url = f"{self.base_url}{dataset_id}/data"
-        max_retries = 3
-        retry_delay = 1
 
-            
         query_params = {
-            "startTime": start_time.isoformat().replace("+00:00", "Z"),
-            "endTime": end_time.isoformat().replace("+00:00", "Z"),
+            "startTime": time_range.startTime.isoformat().replace("+00:00", "Z"),
+            "endTime": time_range.endTime.isoformat().replace("+00:00", "Z"),
             "sortBy": "startTime",
             "sortOrder": "asc",
             "pageSize": "20000"
         }
 
         url = f"{url}?{urlencode(query_params)}"
+        max_retries = 3
+        retry_delay = 1
+
         for attempt in range(max_retries):
             try:
                 async with httpx.AsyncClient() as client:
@@ -160,14 +156,22 @@ class FetchFingridData:
                     response.raise_for_status()
                     full_data = response.json()
                     data = full_data.get("data", [])
+
+                    filtered_points = []
                     for item in data:
                         item.pop("datasetId", None)
-                    return [FingridDataPoint(**item) for item in data]
+                        start_dt = datetime.fromisoformat(item["startTime"].replace("Z", "+00:00"))
+
+                        if start_dt.minute == 0 and start_dt.second == 0:
+                            filtered_points.append(FingridDataPoint(**item))
+
+                    return filtered_points
+
             except httpx.HTTPStatusError as exc:
                 if attempt == max_retries - 1:
                     raise HTTPException(
                         status_code=exc.response.status_code,
-                        detail=f"HTTP error while fetching data for dataset {dataset_id} from Fingrid API. Number of attempts: {attempt +1}"
+                        detail=f"HTTP error while fetching data for dataset {dataset_id} from Fingrid API. Number of attempts: {attempt + 1}"
                     ) from exc
                 await asyncio.sleep(retry_delay)
 
@@ -176,6 +180,7 @@ class FetchFingridData:
                     status_code=500,
                     detail=f"Unexpected error fetching data for dataset {dataset_id} from Fingrid API."
                 ) from e
+
         raise HTTPException(
             status_code=500,
             detail=f"Failed to fetch data for dataset {dataset_id} from Fingrid API after {max_retries} attempts."
@@ -191,7 +196,7 @@ class FetchPriceData:
 
     base_url = "https://api.porssisahko.net/v1/price.json"
 
-    async def fetch_price_data_range(self, start_time: datetime, end_time: datetime):
+    async def fetch_price_data_range(self, time_range: TimeRange) -> List[PriceDataPoint]:
         """
         Fetch hourly electricity price data for a given time range from the Porssisähkö API.
 
@@ -200,14 +205,15 @@ class FetchPriceData:
             end_time (datetime): End time in UTC.
 
         Returns:
-            List[dict]: A list of dictionaries with 'startDate' (ISO8601 UTC string) and 'price' (float) for each hour.
+            List[PriceDataPoint]: A list of PriceDataPoint objects with 'startDate' (UTC RFC3339 string) and 'price' (float) for each hour.
 
         Raises:
             HTTPException: If the API call fails or no data is available.
         """
         result = []
-        current_time = start_time
-
+        current_time = time_range.startTime
+        end_time = time_range.endTime
+        
         while current_time <= end_time:
             # Queries to the Pörssisähko API are in Europe/Helsinki timezone
             hki_time = current_time.astimezone(ZoneInfo("Europe/Helsinki"))
@@ -222,10 +228,13 @@ class FetchPriceData:
                     data = response.json()
                     if not data:
                         raise ValueError(f"No price data returned for {date_str} {hour_str}")
-                    result.append({
-                        "startDate": current_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
-                        "price": data["price"]
-                    })
+                    # Convert to PriceDataPoint
+                    result.append(
+                        PriceDataPoint(
+                            startDate=datetime.strptime(current_time.strftime("%Y-%m-%dT%H:%M:%SZ"), "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc),
+                            price=data["price"]
+                        )
+                    )
             except httpx.HTTPStatusError as exc:
                 raise HTTPException(
                     status_code=exc.response.status_code,
@@ -239,7 +248,7 @@ class FetchPriceData:
 
             current_time += timedelta(hours=1)
 
-        return sorted(result, key=lambda x: x["startDate"])
+        return sorted(result, key=lambda x: x.startDate)
 
 
     async def fetch_price_data_latest(self) -> List[PriceDataPoint]:

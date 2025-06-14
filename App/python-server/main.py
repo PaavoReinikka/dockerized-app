@@ -65,7 +65,9 @@ app.include_router(external_api_router)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["http://localhost:5173",
+                   "http://80.221.169:5173",
+                   "https://192.168.10.45:5173","*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

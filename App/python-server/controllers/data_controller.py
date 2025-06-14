@@ -5,6 +5,10 @@ This module defines the FastAPI routes for the Eprice backend service. It provid
 and querying electricity production, consumption, wind power, and price data. The endpoints fetch data from
 Fingrid and Porssisähkö APIs, and return results as Pydantic models or error responses.
 
+All datetime fields in API requests and responses use the RFC 3339 format. Unless otherwise specified:
+- Input datetimes (startTime, endTime) should be provided as UTC-aware datetimes (e.g., "2025-06-01T20:00:00Z").
+- Returned datetimes (such as startDate, startTime, endTime) are serialized as UTC datetime strings in RFC 3339 format (e.g., "2025-06-01T20:00:00Z").
+
 Routes:
     - /api/windpower
     - /api/windpower/range
@@ -15,6 +19,8 @@ Routes:
     - /api/price/range
     - /api/public/data
     - /api/data/today
+    - /api/price/hourlyavg
+    - /api/price/weekdayavg
 """
 
 from fastapi import APIRouter
@@ -23,6 +29,7 @@ from typing import List
 from services.data_service import FingridDataService, PriceDataService
 from models.data_model import FingridDataPoint, TimeRangeRequest, PriceDataPoint, ErrorResponse
 from fastapi import HTTPException
+from datetime import timedelta
 
 router = APIRouter()
 fingrid_data_service = FingridDataService()
@@ -63,11 +70,9 @@ async def post_windpower_range(time_range: TimeRangeRequest):
         List[FingridDataPoint] | JSONResponse: List of wind power data points or an error message.
     """
     try:
-        return await fingrid_data_service.fingrid_data_range(
-            dataset_id=245,
-            start_time=time_range.startTime,
-            end_time=time_range.endTime,
-)
+        time_range.endTime = time_range.endTime + timedelta(hours=23)
+        return await fingrid_data_service.fingrid_data_range(dataset_id=245, time_range=time_range)
+
     except HTTPException as e:
         return JSONResponse(status_code=e.status_code, content={"error": "HTTPError", "message": e.detail})
     except Exception as e:
@@ -110,11 +115,9 @@ async def post_consumption_range(time_range: TimeRangeRequest):
             Each FingridDataPoint's startTime and endTime are returned as UTC datetimes (RFC 3339).
     """
     try:
+        time_range.endTime = time_range.endTime + timedelta(hours=23)
         return await fingrid_data_service.fingrid_data_range(
-            dataset_id=165,
-            start_time=time_range.startTime,
-            end_time=time_range.endTime
-        )
+            dataset_id=165,time_range=time_range)
     except HTTPException as e:
         return JSONResponse(status_code=e.status_code, content={"error": "HTTPError", "message": e.detail})
     except Exception as e:
@@ -157,11 +160,9 @@ async def post_production_range(time_range: TimeRangeRequest):
             Each FingridDataPoint's startTime and endTime are returned as UTC datetimes (RFC 3339).
     """
     try:
+        time_range.endTime = time_range.endTime + timedelta(hours=23)
         return await fingrid_data_service.fingrid_data_range(
-            dataset_id=241,
-            start_time=time_range.startTime,
-            end_time=time_range.endTime
-        )
+            dataset_id=241, time_range=time_range)
     except HTTPException as e:
         return JSONResponse(status_code=e.status_code, content={"error": "HTTPError", "message": e.detail})
     except Exception as e:
@@ -182,6 +183,7 @@ async def post_price_range(time_range: TimeRangeRequest):
             Each PriceDataPoint's startDate is returned as a UTC datetime string in RFC 3339 format (e.g., '2025-06-01T20:00:00Z').
     """
     try:
+        time_range.endTime = time_range.endTime + timedelta(hours=23)
         return await price_data_service.price_data_range(time_range)
     except HTTPException as e:
         return JSONResponse(status_code=e.status_code, content={"error": "HTTPError", "message": e.detail})
@@ -242,6 +244,7 @@ async def post_price_hourly_avg(time_range: TimeRangeRequest):
             The 'hour' field is in Helsinki time (0-23).
     """
     try:
+        time_range.endTime = time_range.endTime + timedelta(hours=23)
         return await price_data_service.price_data_hourly_avg(time_range)
     except HTTPException as e:
         return JSONResponse(status_code=e.status_code, content={"error": "HTTPError", "message": e.detail})
@@ -261,7 +264,8 @@ async def post_price_weekday_avg_hki(time_range: TimeRangeRequest):
             The 'weekday' field is in Helsinki time (0=Monday, 6=Sunday).
     """
     try:
-        return await price_data_service.price_data_avg_by_weekday(time_range, timezone_hki=True)
+        time_range.endTime = time_range.endTime + timedelta(hours=23)
+        return await price_data_service.price_data_avg_by_weekday(time_range)
     except HTTPException as e:
         return JSONResponse(status_code=e.status_code, content={"error": "HTTPError", "message": e.detail})
     except Exception as e:

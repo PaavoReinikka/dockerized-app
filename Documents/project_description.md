@@ -38,62 +38,17 @@ The system consists of multiple containerized services that work together to pro
 - **Purpose**: Runs end-to-end tests for the system.
 - **Depends On**: `Client`
 
-### 6. User Chat
-- **Ports**: `7862`
-
 ### (Extra) Chat Engine
 - **Ports**: `7860-7861`
-- **Purpose**: Provides a chat engine for interaction with the project. This is meant for developers and maintainers, not the app's end-users. Chat uses retrieval augmented generation, and the retriever has access to project documentation and code.
+- **Purpose**: Provides a chat engine for interaction with the project. This is meant for developers and maintainers, not the app's end-users. Chat uses retrieval augmented generation, and the retriever has access to project documentation and code. There are 2 distinct clients: A traditional streaming chat, and an Agent (for more complex reasoning tasks).
 - **Depends On**: `Database`
 
 ---
 
+## Main services and their interactions
 
-```plantuml
+![Main services and their interactions](./diagrams/images/services_diagram.png)
 
-@startuml
-title Main services and their interactions
-skinparam rectangle {
-    BackgroundColor #FDF6E3
-    BorderColor #586e75
-}
-skinparam cloud {
-    BackgroundColor #FDF6E3
-    BorderColor #586e75
-}
-
-cloud "Docker Network\nmanages networking" as DockerNetwork
-
-package "Database Layer" {
-    [Database] <<container>> 
-    [Database Migrations] <<container>> 
-}
-
-package "Backend Layer" {
-    [Server] <<container>> 
-    [User Chat] <<container>> 
-}
-
-package "Frontend Layer" {
-    [Client] <<container>> 
-    [E2E Tests] <<container>> 
-}
-
-cloud "External APIs" as ExternalAPIs
-
-[Database Migrations] --> [Database] : Applies migrations
-[Server] --> [Database] : Reads/Writes data
-[Client] --> [Server] : API calls (port 8000)
-[Client] --> [User Chat] : LLM service (port 7862)
-[E2E Tests] --> [Client] : Tests frontend
-[Server] --> ExternalAPIs : Makes external API calls
-
-note right of Client
-Runs on port 5173
-end note
-
-@enduml
-```
 
 ## Additional Services Overview
 

@@ -1,0 +1,9 @@
+node_modules
+__pycache__
+Notebooks
+api_definitions
+images
+TEMPORARY
+pgdata
+data
+pdfs

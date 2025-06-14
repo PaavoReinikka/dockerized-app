@@ -10,7 +10,9 @@ to the application's core data models.
 from models.data_model import *
 from ext_apis.ext_apis import *
 from repositories.porssisahko_repository import *
+from repositories.fingrid_repository import FingridRepository
 from utils.porssisahko_service_tools import *
+from utils.fingrid_service_tools import *
 from config.secrets import DATABASE_URL
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -25,6 +27,8 @@ class FingridDataService:
         Initialize the FingridDataService with the external API fetcher.
         """
         self.ext_api_fetcher = FetchFingridData()
+        self.fingrid_repository = FingridRepository(DATABASE_URL)
+        self.fingrid_service_tools = FingridServiceTools(self.ext_api_fetcher, self.fingrid_repository)
 
     async def fingrid_data(self, dataset_id: int) -> FingridDataPoint:
         """
@@ -41,7 +45,7 @@ class FingridDataService:
         """
         return await self.ext_api_fetcher.fetch_fingrid_data(dataset_id)
     
-    async def fingrid_data_range(self, dataset_id: int, start_time: datetime, end_time: datetime) -> List[FingridDataPoint]:
+    async def fingrid_data_range(self, dataset_id: int, time_range: TimeRange) -> List[FingridDataPoint]:
         """
         Fetch Fingrid data for a given dataset ID and time range.
 
@@ -56,7 +60,13 @@ class FingridDataService:
         Raises:
             HTTPException: If the API call fails or no data is available.
         """
-        return await self.ext_api_fetcher.fetch_fingrid_data_range(dataset_id, start_time, end_time)
+            
+        try:
+            result = await self.fingrid_service_tools.fetch_and_process_data(time_range, dataset_id)
+            return result if result else await self.ext_api_fetcher.fetch_fingrid_data_range(dataset_id, time_range)
+        except Exception:
+            print(f"Failed to fetch Fingrid data for dataset_id {dataset_id} in range {time_range.startTime} to {time_range.endTime}")
+            return await self.ext_api_fetcher.fetch_fingrid_data_range(dataset_id, time_range)
 
 
 class PriceDataService:
@@ -69,8 +79,8 @@ class PriceDataService:
         Initialize the PriceDataService with required repositories and helper services.
         """
         self.ext_api_fetcher = FetchPriceData()
-        self.database_fetcher = PorssisahkoRepository(DATABASE_URL)
-        self.porssisahko_service_tools = PorssisahkoServiceTools(self.ext_api_fetcher, self.database_fetcher)
+        self.porssisahko_repository = PorssisahkoRepository(DATABASE_URL)
+        self.porssisahko_service_tools = PorssisahkoServiceTools(self.ext_api_fetcher, self.porssisahko_repository)
 
     async def price_data_latest(self) -> List[PriceDataPoint]:
         """
@@ -82,9 +92,10 @@ class PriceDataService:
         Raises:
             HTTPException: If the API call fails or no data is available.
         """
-        start_date, end_date = self.porssisahko_service_tools.expected_time_range()
+        start_time, end_time = self.porssisahko_service_tools.expected_time_range()
+        time_range = TimeRange(startTime=start_time, endTime=end_time)
         try:
-            result = await self.porssisahko_service_tools.fetch_and_process_data(start_date, end_date)
+            result = await self.porssisahko_service_tools.fetch_and_process_data(time_range)
             return result if result else await self.ext_api_fetcher.fetch_price_data_latest()
         except Exception:
             return await self.ext_api_fetcher.fetch_price_data_latest()
@@ -105,10 +116,10 @@ class PriceDataService:
         """
 
         try:
-            result = await self.porssisahko_service_tools.fetch_and_process_data(time_range.startTime, time_range.endTime)
-            return result if result else await self.ext_api_fetcher.fetch_price_data_range(time_range.startTime, time_range.endTime)
+            result = await self.porssisahko_service_tools.fetch_and_process_data(time_range)
+            return result if result else await self.ext_api_fetcher.fetch_price_data_range(time_range)
         except Exception:
-            return await self.ext_api_fetcher.fetch_price_data_range(time_range.startTime, time_range.endTime)
+            return await self.ext_api_fetcher.fetch_price_data_range(time_range)
 
     async def price_data_today(self) -> List[PriceDataPoint]:
         """
@@ -147,7 +158,7 @@ class PriceDataService:
     
 
     
-    async def price_data_avg_by_weekday(self, time_range: TimeRangeRequest, timezone_hki=False) -> List[PriceAvgByWeekdayPoint]:
+    async def price_data_avg_by_weekday(self, time_range: TimeRangeRequest) -> List[PriceAvgByWeekdayPoint]:
         """
         Calculate average price by weekday for a given time range.
 
@@ -159,5 +170,5 @@ class PriceDataService:
         """
         data = await self.price_data_range(time_range)
         
-        return self.porssisahko_service_tools.calculate_avg_by_weekday(data, timezone_hki=timezone_hki)
+        return self.porssisahko_service_tools.calculate_avg_by_weekday(data)
     

@@ -20,12 +20,12 @@ class PorssisahkoServiceTools:
     PorssisahkoServiceTools has functions for time range calculations, data conversion, and filling missing entries.
     """
 
-    def __init__(self, ext_api_fetcher: FetchPriceData, database_fetcher: PorssisahkoRepository):
+    def __init__(self, ext_api_fetcher: FetchPriceData, porssisahko_repository: PorssisahkoRepository):
         """
         Initialize the PorssisahkoServiceTools with external API and database fetchers.
         """
         self.ext_api_fetcher = ext_api_fetcher
-        self.database_fetcher = database_fetcher
+        self.database_fetcher = porssisahko_repository
 
     def expected_time_range(self) -> tuple[datetime, datetime]:
         """
@@ -72,25 +72,30 @@ class PorssisahkoServiceTools:
         Side effects:
             Updates the result list and inserts new entries into the database.
         """
-        for missing in missing_entries:
-            fetched = await self.ext_api_fetcher.fetch_price_data_range(missing.startDate, missing.startDate)
-            if not fetched:
-                continue
+        try:
+            for missing in missing_entries:
+                time_range = TimeRange(startTime=missing.startDate, endTime=missing.startDate)
+                fetched = await self.ext_api_fetcher.fetch_price_data_range(time_range)
+                if not fetched:
+                    continue
 
-            datapoint = fetched[0]
-            utc_dt = datetime.fromisoformat(datapoint["startDate"])
-            iso_str = (utc_dt + timedelta(hours=0)).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+                datapoint = fetched[0]
+                utc_dt = datapoint.startDate
+                iso_str = (utc_dt + timedelta(hours=0)).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
-            result.append(PriceDataPoint(
-                startDate=utc_dt,
-                price=datapoint["price"]
-            ))
-            await self.database_fetcher.insert_entry(
-                price=datapoint["price"],
-                iso_date=iso_str
-            )
+                result.append(PriceDataPoint(
+                    startDate=utc_dt,
+                    price=datapoint.price
+                ))
+                await self.database_fetcher.insert_entry(
+                    price=datapoint.price,
+                    iso_date=iso_str
+                )
+        except Exception as e:
+            print(f"Error filling missing entries: {e}")
+            raise
 
-    async def fetch_and_process_data(self, startTime, endTime) -> List[PriceDataPoint]:
+    async def fetch_and_process_data(self, time_range:TimeRange) -> List[PriceDataPoint]:
         """
         Fetch and process price data from the database, fill missing entries from the external API if needed.
 
@@ -103,8 +108,8 @@ class PorssisahkoServiceTools:
         """
 
 
-        start_naive_hki = startTime.astimezone(ZoneInfo("Europe/Helsinki")).replace(tzinfo=None)
-        end_naive_hki = endTime.astimezone(ZoneInfo("Europe/Helsinki")).replace(tzinfo=None)
+        start_naive_hki = time_range.startTime.astimezone(ZoneInfo("Europe/Helsinki")).replace(tzinfo=None)
+        end_naive_hki = time_range.endTime.astimezone(ZoneInfo("Europe/Helsinki")).replace(tzinfo=None)
 
 
         raw_data = await self.database_fetcher.get_entries(
@@ -117,8 +122,8 @@ class PorssisahkoServiceTools:
         result = self.convert_to_price_data(raw_data)
 
         missing_entries = self.find_missing_entries_utc(
-            startTime.astimezone(ZoneInfo("UTC")),
-            endTime.astimezone(ZoneInfo("UTC")),
+            time_range.startTime.astimezone(ZoneInfo("UTC")),
+            time_range.endTime.astimezone(ZoneInfo("UTC")),
             result
         )
         if missing_entries:
@@ -171,7 +176,7 @@ class PorssisahkoServiceTools:
         ]
         return sorted(result, key=lambda x: x.hour)
     
-    def calculate_avg_by_weekday(self, data: List[PriceDataPoint], timezone_hki=False) -> List[PriceAvgByWeekdayPoint]:
+    def calculate_avg_by_weekday(self, data: List[PriceDataPoint]) -> List[PriceAvgByWeekdayPoint]:
         """
         Calculate average price by weekday from a list of price data points.
 
@@ -181,7 +186,7 @@ class PorssisahkoServiceTools:
         Returns:
             List[PriceAvgByWeekdayPoint]: List of average prices by weekday.
         """
-        tz = ZoneInfo("Europe/Helsinki") if timezone_hki else None
+        tz = ZoneInfo("Europe/Helsinki")
         weekday_prices = {}
         for point in data:
             dt = point.startDate.astimezone(tz) if tz else point.startDate
@@ -196,4 +201,3 @@ class PorssisahkoServiceTools:
             for weekday, prices in weekday_prices.items()
         ]
         return sorted(result, key=lambda x: x.weekday)
-

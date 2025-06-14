@@ -13,19 +13,19 @@
 
 {#if stats}
     <div class="stats-row">
-        <div class="stat-card">
+        <div class="stat-card" id="max-price-card">
             <div class="stat-label">Max {kind}</div>
             <div class="stat-value">{stats.max} {unit}</div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card" id="min-price-card">
             <div class="stat-label">Min {kind}</div>
             <div class="stat-value">{stats.min} {unit}</div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card" id="avg-price-card">
             <div class="stat-label">Average {kind}</div>
             <div class="stat-value">{stats.mean} {unit}</div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card" id="std-price-card">
             <div class="stat-label">Std. {kind}</div>
             <div class="stat-value">{stats.std} {unit}</div>
         </div>

@@ -6,7 +6,6 @@ capable of generating diagrams using PlantUML and can reference the documents us
 """
 
 import gradio as gr
-from autoloading_uml import uml_viewer
 from chat_manager_with_tools import ChatManagerWithTools
 import dotenv
 dotenv.load_dotenv(".env.private")

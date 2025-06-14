@@ -1,4 +1,4 @@
-### Endpoint tests
+# Endpoint tests
 
 Tests for the phase of development when the frontend is incomplete. Helps in picking up on errors, exceptions and warnings. Relies on Pydantic and proper exception ahndling in the backend to be fully informative. Becomes somewhat obsolete after e2e-tests have been written.
 
@@ -34,3 +34,23 @@ docker stats # resource usage
 docker container prune # remove stopped containers (it prompts you)
 docker system prune # remove unused images, networks (and volumes)
 ```
+
+## Tested Endpoints and Features
+
+| Endpoint                 | HTTP | Description                                 |
+|--------------------------|------|---------------------------------------------|
+| /api/auth/register       | POST | User registration                           |
+| /api/auth/login          | POST | Login                                      |
+| /api/auth/logout         | GET  | Logout                                     |
+| /api/public/data         | GET  | Public price data                           |
+| /api/data/today          | GET  | Today's price data                          |
+| /api/price/range         | POST | Price data for a time range                 |
+| /api/price/hourlyavg     | POST | Hourly average prices for a time range      |
+| /api/price/weekdayavg    | POST | Weekday average prices for a time range     |
+| /api/windpower           | GET  | Wind power production data                  |
+| /api/windpower/range     | POST | Wind power production data for a time range |
+| /api/consumption         | GET  | Electricity consumption data                |
+| /api/consumption/range   | POST | Electricity consumption data for a time range|
+| /api/production          | GET  | Total electricity production data           |
+| /api/production/range    | POST | Total electricity production data for a time range|
+

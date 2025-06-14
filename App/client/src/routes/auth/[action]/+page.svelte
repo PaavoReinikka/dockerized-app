@@ -33,9 +33,9 @@
     <p class="text-xl">{form.message}</p>
   {/if}
 
-  {#if form?.error}
+  <!-- {#if form?.error}
     <p class="text-xl text-red-500">{form.error}</p>
-  {/if}
+  {/if} -->
 
   {#if data.registered}
     <p class="text-xl">

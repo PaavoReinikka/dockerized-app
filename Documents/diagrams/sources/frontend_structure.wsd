@@ -1,0 +1,29 @@
+@startuml
+title Eprice Svelte Frontend Structure
+
+package "src" {
+  package "routes" {
+    [auth]
+    [chat]
+    [price]
+    [epc]
+    [logout]
+    [send]
+    [api]
+  }
+  package "lib" {
+    [apis]
+    [components]
+    [states]
+    [utils]
+    [assets]
+  }
+}
+
+[components] ..> [states] : uses
+[components] ..> [apis] : fetches data
+[routes] ..> [components] : composes UI
+[routes] ..> [apis] : (server-side) fetches data
+[routes] ..> [states] : manages state
+
+@enduml

@@ -4,24 +4,26 @@ import * as dataApi from "$lib/apis/data-api.js";
 
 let pricesState = $state([]); // Use empty array as default
 
+if (browser) {
+  pricesState = await dataApi.readPublicData()
+}
+
 const usePricesState = () => {
   return {
     get data() {
       return pricesState;
     },
-    load: async () => {
-      if (browser) {
-        try {
-          const result = await dataApi.readPublicData();
-          pricesState = result;
-        } catch (e) {
-          console.error("Failed to load pricesState:", e);
-          pricesState = [];
-        }
-      }
+    update: async () => {
+      pricesState = await dataApi.readPublicData();
     },
     state2js: () => {
       return JSON.parse(JSON.stringify(pricesState));
+    },
+    get values() {
+      return pricesState.map((item) => item.value);
+    },
+    get labels() {
+      return pricesState.map((item) => item.startDate);
     },
   };
 };

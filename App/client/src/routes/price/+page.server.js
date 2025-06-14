@@ -1,8 +1,16 @@
 import { PUBLIC_INTERNAL_API_URL } from "$env/static/public";
-import { datesInOrder, getFormattedDates } from '$lib/utils/date-helpers.js';
+import { datesInOrder, getFormattedDates, datesCloseEnough } from '$lib/utils/date-helpers.js';
 import { fail } from "@sveltejs/kit";
 import { COOKIE_KEY } from "$env/static/private";
+import { error, redirect } from "@sveltejs/kit";
 
+export const load = async ({ locals, url }) => {
+  if (!locals.user) {
+    // Not logged in, redirect to login
+    throw redirect(303, `/auth/login`);
+  }
+  return {};
+};
 
 export const actions = {
   getPriceRangeAll: async ({ request, cookies }) => {
@@ -13,6 +21,8 @@ export const actions = {
       return fail(400, { error: "Start and end dates are required." });
     } else if (!datesInOrder(data.startTime, data.endTime)) {
       return fail(400, { error: "Start date must be before end date." });
+    } else if (!datesCloseEnough(data.startTime, data.endTime)) {
+      return fail(400, { error: "The date range must be within the last 6 months." });
     }
 
     try {
@@ -48,16 +58,11 @@ export const actions = {
       const plainLabels = plainSorted.labels;
       const plainValues = plainSorted.values;
 
-      // Format weekday avg (sort by weekday 0-6, label as weekday name)
-      const weekdayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+      const weekdayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
       const weekdaySorted = [...weekdayData].sort((a, b) => a.weekday - b.weekday);
       const weekdayLabels = weekdaySorted.map(item => weekdayNames[item.weekday % 7]);
       const weekdayValues = weekdaySorted.map(item => item.avgPrice);
-      // flip sunday to be the last day
-      weekdayLabels.push(weekdayLabels.shift());
-      weekdayValues.push(weekdayValues.shift());
 
-      // Format hourly avg (sort by hour 0-23, label as "00:00", "01:00", ...)
       const hourlySorted = [...hourlyData].sort((a, b) => a.hour - b.hour);
       const hourlyLabels = hourlySorted.map(item => `${item.hour.toString().padStart(2, "0")}:00`);
       const hourlyValues = hourlySorted.map(item => item.avgPrice);

@@ -22,9 +22,10 @@
     
     let priceCanvas;
     let priceChart;
-    let chartType = $state("line");
+    let chartType = $state("bar");
     let isLoading = $state(false);
 
+    let dataLoader = $state(false);
     //TODO: Weekday avg. not active if less than week of data
 
     const toggleChartType = () => {
@@ -52,8 +53,8 @@
                 labels: getSelectedLabels(),
                 datasets: [{
                     label: 'Price',
-                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                    borderColor: 'rgb(75, 192, 192)',
+                    backgroundColor: 'rgba(10, 200, 245, 0.7)',
+                    borderColor: 'rgb(10, 200, 245)',
                     data: getSelectedValues()
                 }]
             },
@@ -90,6 +91,9 @@
         } else if (selection === "hourly") {
             selectedValues = hourlyPriceValues;
         }
+        dataLoader = (plainPriceLabels.length > 0 ||
+                      weekdayPriceLabels.length > 0 ||
+                      hourlyPriceLabels.length > 0);
     });
 
 </script>
@@ -140,7 +144,10 @@
                     </label>
                     <label class="label">
                         <span class="label-text">Averaging</span>
-                        <select class="select preset-outlined-primary-500" bind:value={selection} id="selection">
+                        <select class="select preset-outlined-primary-500"
+                                bind:value={selection}
+                                id="selection"
+                                disabled={!dataLoader}>
                             <option value="none">None</option>
                             <option value="weekdays">Weekdays avg</option>
                             <option value="hourly">Hourly avg.</option>
@@ -159,11 +166,18 @@
                     </button>
                     <button class="btn preset-outlined-primary-500 hover:preset-filled-primary-500"
                             type="button"
-                            onclick={toggleChartType}>
+                            onclick={toggleChartType}
+                            disabled={!dataLoader}>
                         Toggle Chart Type
+                    </button>
                 </div>
             </form>
         </div>
+            {#if form?.error}
+                <div class="mt-10 text-center">
+                    {form.error}
+                </div>
+            {/if}
             <div class="py-8">
                 <PriceCards values={selectedValues} kind="price" unit="c/kWh"/>
             </div>
@@ -171,8 +185,3 @@
 </div>
 
 
-{#if form?.error}
-  <div class="alert alert-error">
-    {form.error}
-  </div>
-{/if}

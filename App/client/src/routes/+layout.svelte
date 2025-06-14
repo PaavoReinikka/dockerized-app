@@ -11,7 +11,7 @@
     let { children, data } = $props();
     const userState = useUserState();
     if (data.user) {
-      userState.user = data.user;
+      userState.user = data.user; // for future use in components
     }
 
   </script>
@@ -24,33 +24,15 @@
     <Clock />
     <User user={data.user} />
   </div>
-
-  {#if data.user?.email}
-    <!-- <p class="text-right text-gray-500 dark:text-gray-400">
-      Logged in as: <b>{data.user?.email}</b>
-    </p> -->
-
-    <ChatBot user={data.user} />
-  {/if}
   
-  <main class="container grow mx-auto"> <!-- mx-auto grow max-w-4xl-->
+  <main class="container grow mx-auto">
     {@render children()}
   </main>
+
+  {#if data.user?.role === "admin"}
+    <ChatBot user={data.user} />
+  {/if}
 
   <Footer />
   
 </div>
-
-<!--
-<style>
-  :global(body){
-  background-image: url("https://images.pexels.com/photos/956981/milky-way-starry-sky-night-sky-star-956981.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260");
-  background-size: cover;
-  background-repeat: no-repeat;
-  background-attachment: fixed;
-  background-position: center;
-  font-family: 'Poppins', sans-serif;
-  font-size: 1.2rem
-  }
-</style>
--->

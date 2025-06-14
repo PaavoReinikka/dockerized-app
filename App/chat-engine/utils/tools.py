@@ -80,7 +80,6 @@ def _save_plantuml_code(code: str) -> str:
         f.write(code)
     return diagram_path
 
-
 @tool
 def generate_plantuml_diagram_from_file_tool(file_name: str) -> str:
     """
