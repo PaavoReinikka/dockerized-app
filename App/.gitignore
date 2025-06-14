@@ -1,5 +1,2 @@
 .env.private
-.env.local
-.venv/
-node_modules/
 pgdata/

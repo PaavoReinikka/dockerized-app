@@ -86,14 +86,14 @@
 </script>
 
 <h1 id="mainheading" class="text-center">
-    <span class="text-xl">Market Electricity Prices<br> {new Date().toLocaleDateString()}</span>
+    <span class="text-xl">Market Electricity Prices<br> {new Date().toLocaleDateString('fi-FI')}</span>
     <br>
 </h1>
 <main class="flex gap-10 max-w-4xl mx-auto">
     <div class="text-center gap-5 flex flex-col mb-10">
-       <PriceBall heading={`Sähkönhinta NYT (${currentHourLabel})`} price={currentPrice} timestamp={matchingPrice?.startDate}/>
-       <PriceBall heading="Sähkö 24h" price={dailyAverage}/>
-       <PriceBall heading="Sähkö viikko" price={weekAvgPrice}/>  
+       <PriceBall heading={`Electricity Rate NOW (${currentHourLabel})`} price={currentPrice} timestamp={matchingPrice?.startDate}/>
+       <PriceBall heading="Electricity Rate 24h" price={dailyAverage}/>
+       <PriceBall heading="Electricity Rate week" price={weekAvgPrice}/>  
     </div>
     
     <MainChart />

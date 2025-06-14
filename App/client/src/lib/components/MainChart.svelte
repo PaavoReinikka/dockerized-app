@@ -104,7 +104,7 @@
             data: {
                 labels: chartLabels,
                 datasets: [{
-                    label: 'Sähkön hinta UTC(+0)',
+                    label: 'Electricity Rate (€) UTC(+0)',
                     backgroundColor: 'rgb(70, 50, 255)',
                     borderColor: 'rgb(255, 255, 255)',
                     borderWidth: 1,
@@ -146,17 +146,17 @@
     }
 
     $effect(() => {
-    localStorage.setItem('chartType', chartType);
-	if (ctx && chartLabels.length > 0 && chartValues.length > 0) {
-		renderChart();
-	}
+        localStorage.setItem('chartType', chartType);
+        if (ctx && chartLabels.length > 0 && chartValues.length > 0) {
+            renderChart();
+	    }
 });
 
 </script>
 <div class="w-full flex flex-col justify-center mx-auto p-4">
     {#if cheapestPrice}
         <p class="text-md text-green-400 font-semibold mt-4 mb-2 text-center">
-            Halvin hinta kaaviossa: {cheapestPrice} €/kWh ({cheapestTime})
+            Cheapest rate on graph: {cheapestPrice} €/kWh ({cheapestTime})
         </p>
     {/if}
     <div class="relative min-w-[700px] min-h-[300px]">

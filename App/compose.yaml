@@ -121,8 +121,8 @@ services:
     ports:
       - 7863:7860
     restart: always
-    # profiles:
-    #   - user-chat
+    profiles:
+      - user-chat
   
   # chat-engine:
   #   container_name: chat-engine

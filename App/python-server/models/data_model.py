@@ -7,7 +7,7 @@ and utility base classes for datetime validation.
 """
 
 from pydantic import BaseModel, Field, field_validator, field_serializer
-from datetime import datetime
+from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
 
@@ -101,23 +101,30 @@ class PriceDataPoint(BaseModel):
     Model representing a single electricity price data point.
 
     Attributes:
-        startDate (datetime): Start time of the price data point, returned as naive datetime in Helsinki time (YYYY-MM-DD HH:MM).
+        startDate (datetime): Start time of the price data point. 
+            When serialized (returned from the API), this is formatted as a UTC datetime string (RFC 3339, e.g., '2025-06-01T20:00:00Z').
         price (float): Price in euro cents.
     """
     startDate: datetime = Field(
-        description="Datetime, returned as naive datetime string in Helsinki time.",
-        examples=["2025-06-02 03:00"]
+        description="Datetime, returned as naive datetime string in UTC datetime string in RFC 3339 format",
+        # examples=["2025-06-01 23:00"] # Uncomment this line if you want to use naive datetime in Helsinki time
+        examples=["2025-06-01T20:00:00Z"]
     )
     price: float = Field(
         description="Floating-point number representing the price in euro cents.",
         examples=[0.61]
     )
+    # if startDate is wanted as naive datetime in Helsinki time, uncomment the serializer below
+    # @field_serializer('startDate')
+    # def serialize_start_date(self, dt: datetime, _info):
+    #     dt_helsinki = dt.astimezone(HELSINKI_TZ)
+    #     naive_helsinki = dt_helsinki.replace(tzinfo=None)
+    #     return naive_helsinki.strftime('%Y-%m-%d %H:%M')
 
     @field_serializer('startDate')
     def serialize_start_date(self, dt: datetime, _info):
-        dt_helsinki = dt.astimezone(HELSINKI_TZ)
-        naive_helsinki = dt_helsinki.replace(tzinfo=None)
-        return naive_helsinki.strftime('%Y-%m-%d %H:%M')
+        dt_utc = dt.astimezone(timezone.utc)
+        return dt_utc.strftime('%Y-%m-%dT%H:%M:%SZ')
 
 class HourlyAvgPricePoint(BaseModel):
     """

@@ -1,0 +1,102 @@
+### This file contains HTTP requests to test the API endpoints.
+
+### Register a new user
+curl -X POST http://localhost:8000/api/auth/register \
+     -d '{"email": "test@test.com", "password": "secret"}' \
+     -H 'Content-Type: application/json'
+
+### Login with the registered user
+curl -X POST http://localhost:8000/api/auth/login \
+     -d '{"email": "test@test.com", "password": "secret"}' \
+     -H 'Content-Type: application/json' \
+     -c cookies.txt \
+     -v
+
+### logout the user
+curl -X GET http://localhost:8000/api/auth/logout -v
+
+
+
+### Price data endpoints
+### Price data 48h
+curl -X GET http://localhost:8000/api/public/data -v
+
+### Price data today
+curl -X GET http://localhost:8000/api/data/today -v
+
+### Price data with range UTC request
+POST http://localhost:8000/api/price/range
+Content-Type: application/json
+
+{
+  "startTime": "2025-06-01T00:00:00Z",
+  "endTime": "2025-06-02T21:00:00Z"
+}
+
+### Price data with range naive Helsinki time request
+POST http://localhost:8000/api/price/range
+Content-Type: application/json
+
+{
+  "startTime": "2025-06-02 00:00",
+  "endTime": "2025-06-02 23:00"
+}
+
+
+
+### Fingrid data endpoints
+### fingrid wind power prooduction data now
+curl -X GET http://localhost:8000/api/windpower -v
+
+### Fingrid Windpower range
+POST http://localhost:8000/api/windpower/range
+Content-Type: application/json
+
+{
+  "startTime": "2025-05-08T04:00:00Z",
+  "endTime": "2025-05-08T06:00:00Z"
+}
+
+### fingrid consumption data now
+curl -X GET http://localhost:8000/api/consumption -v
+
+### fingrid consumption data range
+POST http://localhost:8000/api/consumption/range
+Content-Type: application/json
+
+{
+  "startTime": "2025-05-08T04:00:00Z",
+  "endTime": "2025-05-08T06:00:00Z"
+}
+
+### fingrid total production data
+curl -X GET http://localhost:8000/api/production -v
+
+### Fingrid total production data range
+POST http://localhost:8000/api/production/range
+Content-Type: application/json
+
+{
+  "startTime": "2025-05-26T00:00:00Z",
+  "endTime": "2025-05-26T06:00:00Z"
+}
+
+### price average data by hour
+POST http://localhost:8000/api/price/hourlyavg
+Content-Type: application/json
+
+{
+  "startTime": "2025-05-01T00:00",
+  "endTime": "2025-05-31T23:00"
+}
+
+
+
+### price average data by weekday in Helsinki time
+POST http://localhost:8000/api/price/weekdayavghki
+Content-Type: application/json
+
+{
+  "startTime": "2025-05-01T00:00:00",
+  "endTime": "2025-06-01T23:00:00"
+}

@@ -4,11 +4,11 @@
 
 <div id="priceBall" class="flex flex-col justify-center items-center rounded-full bg-blue-500 w-50 h-50">
     <p class="font-bold">{heading}</p>
-    <span>{price}(snt / kWh)</span>
+    <span>{price}(cents / kWh)</span>
 
     {#if timestamp}
 		<p class="text-xs text-gray-200 mt-1">
-			Päivitetty: {new Date(timestamp).toLocaleString('fi-FI', {
+			Updated: {new Date(timestamp).toLocaleString('fi-FI', {
 				timeZone: 'Europe/Helsinki',
 				hour: '2-digit',
 				minute: '2-digit',

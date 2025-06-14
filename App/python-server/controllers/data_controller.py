@@ -179,9 +179,8 @@ async def post_price_range(time_range: TimeRangeRequest):
 
     Returns:
         List[PriceDataPoint] | JSONResponse: List of price data points or an error message.
-            Each PriceDataPoint's startDate is returned as naive datetime in Helsinki time (YYYY-MM-DD HH:MM).
+            Each PriceDataPoint's startDate is returned as a UTC datetime string in RFC 3339 format (e.g., '2025-06-01T20:00:00Z').
     """
-
     try:
         return await price_data_service.price_data_range(time_range)
     except HTTPException as e:
@@ -189,7 +188,6 @@ async def post_price_range(time_range: TimeRangeRequest):
     except Exception as e:
         print(e)
         return JSONResponse({"error":"InternalServerError", "message": str(e)})
-
 
 
 @router.get(
@@ -202,7 +200,7 @@ async def get_prices():
 
     Returns:
         List[PriceDataPoint] | JSONResponse: List of the latest price data points or an error message.
-            Each PriceDataPoint's startDate is returned as naive datetime in Helsinki time (YYYY-MM-DD HH:MM).
+            Each PriceDataPoint's startDate is returned as a UTC datetime string in RFC 3339 format (e.g., '2025-06-01T20:00:00Z').
     """
     try:
         return await price_data_service.price_data_latest()
@@ -222,7 +220,7 @@ async def get_prices_today():
 
     Returns:
         List[PriceDataPoint] | JSONResponse: List of today's price data points or an error message.
-            Each PriceDataPoint's startDate is returned as naive datetime in Helsinki time (YYYY-MM-DD HH:MM).
+            Each PriceDataPoint's startDate is returned as a UTC datetime string in RFC 3339 format (e.g., '2025-06-01T20:00:00Z').
     """
     try:
         return await price_data_service.price_data_today()
