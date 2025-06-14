@@ -187,7 +187,7 @@ This project us under MIT license: https://mit-license.org/
 
 ## Acknowledgments
 
-Juho Ahopelto has implemented and tested the main data endpoints on the backend. Electricity price data is sourced from Pörssisähkö API, and the production and consumption data from Fingrid.
+Juho Ahopelto (https://github.com/juho-a) has implemented and tested the main data endpoints on the backend. Electricity price data is sourced from Pörssisähkö API, and the production and consumption data from Fingrid.
 
 The developer chat uses OpenAI's gpt-4o-mini (both for chat and reranking). 
 
