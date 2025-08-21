@@ -1,4 +1,3 @@
-
 # Eprice project
 
 A complete README file in `./App/README.md`.
