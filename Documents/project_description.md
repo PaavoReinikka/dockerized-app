@@ -1,6 +1,6 @@
 # Project Overview
 
-This is a software development project for Taitotalo's Python programmer course. We develop a web application using container technology, with Svelte and JavaScript frontend (using deno), FastAPI backend, Postgres database with vector extension, Flyway migrations, Playwright e2e-tests, Pytest backend tests, and a chat-engine (HuggingFace, Langchain and OpenAI). A concise description of the project is given in this document, but more technical information can be found from `./App/README.md`.
+This is a software development project for a web application using container technology, with Svelte and JavaScript frontend (using deno), FastAPI backend, Postgres database with vector extension, Flyway migrations, Playwright e2e-tests, Pytest backend tests, and a chat-engine (HuggingFace, Langchain and OpenAI). A concise description of the project is given in this document, but more technical information can be found from `./App/README.md`.
 
 
 ## Application Overview
